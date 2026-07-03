@@ -729,14 +729,7 @@
                     if(envKey) keyToUse = envKey;
                 }
 
-                if (!keyToUse) {
-                    appendChatBubble('ni', "系統提示：請先點擊右上角「設定」，輸入您的 Google Gemini API Key 才能開始辨證。");
-                    updateChatStatus("等待設定");
-                    document.getElementById('api-modal').classList.remove('hidden');
-                    const loadingBubble = document.getElementById('loading-bubble');
-                    if(loadingBubble) loadingBubble.remove();
-                    return;
-                }
+                // 雲端版：未填金鑰時 key 留空，由後端 RAG 伺服器的備援金鑰處理
 
                 const parts = [{ text: fullPrompt }];
                 if(isInitial) {
