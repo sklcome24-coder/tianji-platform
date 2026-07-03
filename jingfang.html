@@ -1,0 +1,1042 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-欸scale=1.0, user-scalable=no">
+    <title>倪海廈經方系統 (v64 深度辨證版)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+        import { getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, updateDoc, deleteDoc } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+        
+        window.firebaseModules = { initializeApp, getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged, getFirestore, collection, addDoc, query, orderBy, onSnapshot, serverTimestamp, doc, updateDoc, deleteDoc };
+        
+        if (typeof __firebase_config !== 'undefined') {
+            try {
+                const app = initializeApp(JSON.parse(__firebase_config));
+                window.auth = getAuth(app);
+                window.db = getFirestore(app);
+                
+                const initAuth = async () => {
+                    if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                        await signInWithCustomToken(window.auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(window.auth);
+                    }
+                };
+                initAuth();
+                
+                onAuthStateChanged(window.auth, u => { 
+                    if(u) { window.userId = u.uid; }
+                });
+            } catch(e){ console.error("Firebase Init Error", e); }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Noto Serif TC', serif; background-color: #f5f5f4; color: #292524; }
+        
+        .zen-card { background-color: #fff; border: 1px solid #e7e5e4; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 16px; overflow: hidden; }
+        .zen-header { background-color: #fafaf9; border-bottom: 1px solid #f5f5f4; padding: 12px 16px; font-weight: bold; color: #78350f; display: flex; align-items: center; gap: 8px; }
+
+        .radio-label { display: flex; align-items: center; padding: 8px 12px; border: 1px solid #f5f5f4; border-radius: 6px; cursor: pointer; transition: all 0.2s; background: #fff; }
+        .radio-label:hover { background-color: #fafaf9; }
+        .radio-label:has(input:checked) { border-color: #fbbf24; background-color: #fffbeb; box-shadow: 0 0 0 1px #fbbf24 inset; }
+        .radio-label-other { border-color: #e5e7eb; background-color: #f9fafb; color: #6b7280; }
+        .radio-label input:checked + span { color: #b45309; font-weight: bold; }
+
+        .note-input { width: 100%; background: transparent; border: none; border-bottom: 1px dashed #d6d3d1; padding: 8px 4px; font-size: 0.85rem; color: #57534e; transition: border 0.3s; border-radius: 0; }
+        .note-input:focus { outline: none; border-bottom: 1px solid #78350f; background-color: #fffbeb; }
+
+        .rx-paper { background-color: #fff; background-image: linear-gradient(#f5f5f4 1px, transparent 1px); background-size: 100% 2rem; line-height: 2rem; padding: 2rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border-top: 4px solid #78350f; position: relative; }
+
+        .file-upload { border: 2px dashed #d6d3d1; background: #fafaf9; transition: all 0.2s; position: relative; display: flex; justify-content: center; align-items: center; cursor: pointer; flex-direction: column; text-align: center; }
+        .file-upload:hover { border-color: #78350f; background-color: #fff7ed; }
+        .img-overlay-btn { position: absolute; top: 2px; right: 2px; background: rgba(0,0,0,0.6); color: white; width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; cursor: pointer; z-index: 30; }
+        #lightbox-modal { backdrop-filter: blur(5px); }
+
+        .loader { border: 3px solid #f3f3f3; border-top: 3px solid #78350f; border-radius: 50%; width: 20px; height: 20px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* 聊天室樣式 */
+        .chat-bubble { max-width: 90%; padding: 12px 16px; font-size: 0.95rem; line-height: 1.6; position: relative; margin-bottom: 12px; }
+        .chat-ni { align-self: flex-start; background-color: #292524; color: #e7e5e4; border-radius: 12px 12px 12px 0; border-left: 4px solid #b45309; }
+        .chat-user { align-self: flex-end; background-color: #fff; color: #374151; border-radius: 12px 12px 0 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+        .chat-ni::before { content: '倪師'; position: absolute; top: -20px; left: 0; font-size: 0.75rem; color: #78350f; font-weight: bold; }
+        .chat-user::before { content: '您'; position: absolute; top: -20px; right: 0; font-size: 0.75rem; color: #6b7280; }
+        
+        .typing-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background-color: #a8a29e; animation: typing 1.4s infinite ease-in-out both; margin: 0 2px; }
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes typing { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1); } }
+
+        .api-status-badge { font-size: 0.75rem; padding: 2px 8px; border-radius: 9999px; display: flex; align-items: center; gap: 4px; transition: all 0.3s; }
+        .api-status-badge.active { background-color: #dcfce7; color: #166534; border: 1px solid #86efac; }
+        .api-status-badge.inactive { background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5; }
+
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background-color: #d6d3d1; border-radius: 20px; }
+        
+        .toast { position: absolute; bottom: 80px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 8px 16px; border-radius: 20px; font-size: 12px; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 100; }
+        .toast.show { opacity: 1; }
+
+        .delete-btn { opacity: 0.6; transition: all 0.2s; z-index: 10; }
+        .delete-btn:hover { opacity: 1; transform: scale(1.1); background-color: #fee2e2; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen overflow-x-hidden">
+
+    <!-- Header -->
+    <header class="bg-[#1c1917] text-[#e7e5e4] py-3 px-6 shadow-md sticky top-0 z-50 border-b-2 border-[#78350f]">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div>
+                <h1 class="text-xl md:text-2xl font-bold tracking-[0.15em] flex items-center gap-2">
+                    <span class="bg-[#78350f] text-[#fef3c7] px-2 py-0.5 text-lg font-serif rounded-sm">經方</span>
+                    倪海廈數位系統
+                </h1>
+                <p class="text-xs text-[#a8a29e] mt-1 flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span> 深度辨證版 (v64)
+                </p>
+            </div>
+            <div class="flex items-center gap-3">
+                <div id="api-status-display" class="api-status-badge inactive cursor-pointer" onclick="document.getElementById('api-modal').classList.remove('hidden')">
+                    <i class="fa-solid fa-link-slash"></i> 未連線
+                </div>
+                <button onclick="document.getElementById('api-modal').classList.remove('hidden')" class="text-xs border border-gray-600 hover:bg-gray-700 text-gray-300 px-3 py-1.5 rounded transition">
+                    <i class="fa-solid fa-gear"></i> 設定
+                </button>
+                <button onclick="toggleHistory()" class="text-xs bg-[#b45309] hover:bg-[#92400e] text-white px-3 py-1.5 rounded transition shadow flex items-center gap-1">
+                    <i class="fa-solid fa-book-medical"></i> 病歷
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <div class="flex-grow max-w-7xl mx-auto w-full p-2 md:p-6 flex flex-col lg:flex-row gap-6">
+        
+        <!-- 左側：輸入區 -->
+        <div class="w-full lg:w-5/12 space-y-4">
+            
+            <!-- 1. 體格與望診 (包含數位數據) -->
+            <div class="zen-card">
+                <div class="zen-header cursor-pointer" onclick="toggleSection('body-section')">
+                    <span><i class="fa-solid fa-user-doctor"></i> 望診 (舌/面/數據)</span>
+                    <i class="fa-solid fa-chevron-down ml-auto text-xs text-gray-400"></i>
+                </div>
+                <div id="body-section" class="p-4 space-y-4">
+                    <!-- 基本資料 -->
+                    <div>
+                        <div class="flex gap-2 mb-2">
+                            <label class="flex-1 cursor-pointer"><input type="radio" name="gender" value="男" class="peer sr-only" checked><div class="text-center py-2 border rounded peer-checked:bg-[#2d2a26] peer-checked:text-white transition text-sm">男</div></label>
+                            <label class="flex-1 cursor-pointer"><input type="radio" name="gender" value="女" class="peer sr-only"><div class="text-center py-2 border rounded peer-checked:bg-[#2d2a26] peer-checked:text-white transition text-sm">女</div></label>
+                        </div>
+                        <div class="grid grid-cols-3 gap-2">
+                            <input type="number" id="age" class="w-full p-2 border rounded text-center bg-gray-50 text-sm" placeholder="年齡 45">
+                            <input type="number" id="height" class="w-full p-2 border rounded text-center bg-gray-50 text-sm" placeholder="身高 170" value="170">
+                            <input type="number" id="weight" class="w-full p-2 border rounded text-center bg-gray-50 text-sm" placeholder="體重 65" value="65">
+                        </div>
+                    </div>
+
+                    <!-- 望診區：舌象 + 面相 -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <!-- 舌診 -->
+                        <div id="box-tongue" class="file-upload h-28 rounded overflow-hidden border-2 border-dashed border-amber-200 bg-amber-50 relative">
+                            <input type="file" id="tongue-image" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer" onchange="previewImage(this, 'tongue')">
+                            <div id="tongue-placeholder" class="pointer-events-none flex flex-col items-center justify-center h-full">
+                                <i class="fa-solid fa-tongue text-2xl text-amber-300 mb-1"></i>
+                                <p class="text-xs text-amber-700 font-bold">上傳舌象</p>
+                            </div>
+                            <img id="tongue-preview" class="absolute inset-0 w-full h-full object-cover hidden z-20" onclick="openLightbox('tongue-preview')">
+                            <div id="tongue-clear" class="img-overlay-btn hidden" onclick="clearImage('tongue')"><i class="fa-solid fa-xmark"></i></div>
+                        </div>
+
+                        <!-- 面相 (新增) -->
+                        <div id="box-face" class="file-upload h-28 rounded overflow-hidden border-2 border-dashed border-orange-200 bg-orange-50 relative">
+                            <input type="file" id="face-image" accept="image/*" class="absolute inset-0 w-full h-full opacity-0 z-10 cursor-pointer" onchange="previewImage(this, 'face')">
+                            <div id="face-placeholder" class="pointer-events-none flex flex-col items-center justify-center h-full">
+                                <i class="fa-regular fa-face-smile text-2xl text-orange-300 mb-1"></i>
+                                <p class="text-xs text-orange-700 font-bold">上傳面相</p>
+                            </div>
+                            <img id="face-preview" class="absolute inset-0 w-full h-full object-cover hidden z-20" onclick="openLightbox('face-preview')">
+                            <div id="face-clear" class="img-overlay-btn hidden" onclick="clearImage('face')"><i class="fa-solid fa-xmark"></i></div>
+                        </div>
+                    </div>
+                    
+                    <!-- 數位數據 Grid -->
+                    <div class="grid grid-cols-4 gap-2">
+                        <!-- 心率 -->
+                        <div id="box-hr" class="file-upload h-20 rounded overflow-hidden bg-red-50 hover:bg-red-100 border-red-100">
+                            <input type="file" id="hr-image" accept="image/*" class="absolute inset-0 opacity-0 z-10 cursor-pointer" onchange="previewImage(this, 'hr')">
+                            <div id="hr-placeholder" class="pointer-events-none">
+                                <i class="fa-solid fa-heart-pulse text-red-300 text-lg mb-0.5"></i>
+                                <div class="text-[10px] text-red-800 font-bold">靜止心率</div>
+                            </div>
+                            <img id="hr-preview" class="hidden w-full h-full object-cover z-20" onclick="openLightbox('hr-preview')">
+                            <div id="hr-clear" class="img-overlay-btn hidden" onclick="clearImage('hr')">x</div>
+                        </div>
+
+                        <!-- 睡眠 -->
+                        <div id="box-sleep" class="file-upload h-20 rounded overflow-hidden bg-indigo-50 hover:bg-indigo-100 border-indigo-100">
+                            <input type="file" id="sleep-image" accept="image/*" class="absolute inset-0 opacity-0 z-10 cursor-pointer" onchange="previewImage(this, 'sleep')">
+                            <div id="sleep-placeholder" class="pointer-events-none">
+                                <i class="fa-solid fa-bed text-indigo-300 text-lg mb-0.5"></i>
+                                <div class="text-[10px] text-indigo-800 font-bold">睡眠監測</div>
+                            </div>
+                            <img id="sleep-preview" class="hidden w-full h-full object-cover z-20" onclick="openLightbox('sleep-preview')">
+                            <div id="sleep-clear" class="img-overlay-btn hidden" onclick="clearImage('sleep')">x</div>
+                        </div>
+
+                        <!-- HRV -->
+                        <div id="box-hrv" class="file-upload h-20 rounded overflow-hidden bg-purple-50 hover:bg-purple-100 border-purple-100">
+                            <input type="file" id="hrv-image" accept="image/*" class="absolute inset-0 opacity-0 z-10 cursor-pointer" onchange="previewImage(this, 'hrv')">
+                            <div id="hrv-placeholder" class="pointer-events-none">
+                                <i class="fa-solid fa-wave-square text-purple-300 text-lg mb-0.5"></i>
+                                <div class="text-[10px] text-purple-800 font-bold">HRV 變異</div>
+                            </div>
+                            <img id="hrv-preview" class="hidden w-full h-full object-cover z-20" onclick="openLightbox('hrv-preview')">
+                            <div id="hrv-clear" class="img-overlay-btn hidden" onclick="clearImage('hrv')">x</div>
+                        </div>
+
+                        <!-- 血氧 -->
+                        <div id="box-spo2" class="file-upload h-20 rounded overflow-hidden bg-sky-50 hover:bg-sky-100 border-sky-100">
+                            <input type="file" id="spo2-image" accept="image/*" class="absolute inset-0 opacity-0 z-10 cursor-pointer" onchange="previewImage(this, 'spo2')">
+                            <div id="spo2-placeholder" class="pointer-events-none">
+                                <i class="fa-solid fa-lungs text-sky-300 text-lg mb-0.5"></i>
+                                <div class="text-[10px] text-sky-800 font-bold">血氧 SpO2</div>
+                            </div>
+                            <img id="spo2-preview" class="hidden w-full h-full object-cover z-20" onclick="openLightbox('spo2-preview')">
+                            <div id="spo2-clear" class="img-overlay-btn hidden" onclick="clearImage('spo2')">x</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. 倪師十問 -->
+            <div class="zen-card">
+                <div class="zen-header flex justify-between cursor-pointer" onclick="toggleSection('questions-container')">
+                    <span><i class="fa-solid fa-clipboard-list"></i> 倪師十問</span>
+                    <span class="text-[10px] font-normal bg-amber-100 text-amber-800 px-2 py-0.5 rounded">點擊折疊</span>
+                </div>
+                <div id="questions-container" class="p-4 space-y-6 max-h-[50vh] overflow-y-auto custom-scrollbar transition-all duration-300">
+                    <!-- JS自動生成 -->
+                </div>
+            </div>
+
+            <!-- 3. 主訴 -->
+            <div class="zen-card">
+                <div class="zen-header"><i class="fa-solid fa-comment-medical"></i> 核心主訴</div>
+                <div class="p-4">
+                    <textarea id="main-complaint" class="w-full h-20 p-3 border rounded bg-gray-50 text-sm focus:border-[#78350f] focus:ring-1 focus:ring-[#78350f] outline-none resize-none" placeholder="請描述最不舒服的症狀..."></textarea>
+                </div>
+            </div>
+
+            <!-- 啟動按鈕 -->
+            <div class="relative">
+                <div id="error-msg" class="text-center text-xs text-red-600 font-bold mb-2 hidden bg-red-100 p-2 rounded"></div>
+                <button onclick="startInitialAnalysis()" id="analyze-btn" class="w-full bg-[#1c1917] hover:bg-black text-[#e7e5e4] text-lg font-bold py-4 rounded shadow-lg transition-all flex justify-center items-center gap-2 border-b-4 border-[#44403c] active:border-0 active:translate-y-1">
+                    <i class="fa-solid fa-bolt"></i> 啟動二階段辨證
+                </button>
+            </div>
+        </div>
+
+        <!-- 右側：結果與互動區 (Sticky Layout) -->
+        <div class="w-full lg:w-7/12 flex flex-col gap-4 h-[calc(100vh-80px)] lg:sticky lg:top-[70px]">
+            
+            <!-- 初始狀態 -->
+            <div id="intro-state" class="zen-card h-full flex flex-col justify-center items-center text-center p-10 opacity-70">
+                <div class="w-24 h-24 rounded-full border-4 border-[#d6d3d1] flex items-center justify-center text-4xl text-[#d6d3d1] font-serif mb-4">問</div>
+                <h3 class="text-xl font-bold text-[#44403c] mb-2">準備辨證</h3>
+                <p class="text-sm text-gray-500 max-w-xs mx-auto leading-relaxed">
+                    請上傳舌象、<strong>面相</strong>或健康數據。<br>
+                    系統將先進行「初步問診」，經您確認症狀後再開方。<br>
+                    (資料僅存於本地，隱私安全)
+                </p>
+            </div>
+
+            <!-- 聊天/結果容器 (Flex Col) -->
+            <div id="interaction-area" class="hidden flex-col h-full gap-2">
+                
+                <!-- 結果卡片 (默認高度較小，可折疊) -->
+                <div id="result-card-container" class="hidden shrink-0 transition-all duration-300 ease-in-out relative flex flex-col" style="max-height: 45%;">
+                     <div class="bg-[#1c1917] text-[#e7e5e4] rounded-t shadow-lg flex justify-between items-center px-4 py-2 cursor-pointer select-none" onclick="toggleResultSize()" title="點擊展開/收縮">
+                        <div class="flex items-center gap-2">
+                             <div class="text-xs text-gray-400 uppercase tracking-widest">AI DIAGNOSIS</div>
+                             <div id="diagnosis-stage" class="bg-[#b45309] text-white px-2 py-0.5 text-xs rounded font-bold">--</div>
+                        </div>
+                        <i id="result-toggle-icon" class="fa-solid fa-chevron-down text-gray-400 hover:text-white"></i>
+                     </div>
+                    
+                    <div id="result-content" class="overflow-y-auto custom-scrollbar bg-white rounded-b shadow border-x border-b border-gray-200 p-2 space-y-2">
+                        <!-- 結果內容 -->
+                        <div class="p-3 bg-gray-50 border border-gray-200 rounded grid grid-cols-2 gap-4">
+                             <div>
+                                <div class="text-xs text-gray-500 mb-1">病機</div>
+                                <div id="pathology" class="text-sm font-bold text-gray-800 leading-tight">--</div>
+                            </div>
+                            <div class="border-l border-gray-300 pl-4">
+                                <div class="text-xs text-gray-500 mb-1">八綱</div>
+                                <div id="bagang-details" class="text-sm text-gray-700">--</div>
+                            </div>
+                        </div>
+
+                        <div class="rx-paper rounded shadow-sm p-4 !py-4">
+                            <div class="mb-2 border-b border-dashed border-[#d6d3d1] pb-2 flex justify-between items-baseline">
+                                <h3 class="text-[#78350f] font-bold text-lg"><i class="fa-solid fa-mortar-pestle"></i> <span id="rx-name">--</span></h3>
+                            </div>
+                            <div id="herb-bone-list" class="grid grid-cols-3 sm:grid-cols-4 gap-x-2 gap-y-1 text-sm mb-3"></div>
+                            
+                            <div class="text-xs text-[#44403c] leading-relaxed font-serif text-justify bg-[#fafaf9] p-2 rounded border border-[#f5f5f4]">
+                                <span class="font-bold text-[#78350f]">【方義】</span> <span id="rx-reason"></span>
+                            </div>
+                             <div class="mt-2 pt-2 border-t border-dashed border-gray-300 text-xs text-[#44403c] italic">
+                                <span class="font-bold text-amber-700">【倪師點評】</span> <span id="ni-comment"></span>
+                            </div>
+                        </div>
+
+                        <!-- 備註區 -->
+                        <div class="p-3 bg-yellow-50 border border-yellow-200 rounded mt-2">
+                            <label class="block text-xs font-bold text-yellow-800 mb-1"><i class="fa-solid fa-pen-to-square"></i> 個人備註 / 服藥反饋</label>
+                            <textarea id="user-note" class="w-full text-xs p-2 border border-yellow-200 rounded bg-white" rows="2" placeholder="紀錄服用後的感覺，或給自己的筆記..."></textarea>
+                            <div class="flex justify-end mt-1">
+                                <button onclick="saveUserNote()" class="text-xs bg-yellow-600 text-white px-2 py-1 rounded hover:bg-yellow-700 transition">保存備註</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 聊天互動區 (佔據剩餘空間) -->
+                <div class="flex-grow flex flex-col bg-white rounded-lg shadow border border-gray-200 overflow-hidden min-h-[400px]">
+                    <div class="bg-gray-100 p-2 border-b border-gray-200 text-xs font-bold text-gray-600 flex justify-between items-center shadow-sm z-10">
+                        <span class="flex items-center gap-2"><i class="fa-solid fa-comments text-amber-700"></i> 倪師診間對話</span>
+                        <span id="chat-status" class="text-[10px] bg-white px-2 py-0.5 rounded border border-gray-200 text-amber-600">待命中</span>
+                    </div>
+                    
+                    <div id="chat-box" class="flex-grow p-4 overflow-y-auto custom-scrollbar space-y-6 bg-[#f9fafb]">
+                        <!-- Chat messages go here -->
+                    </div>
+
+                    <div class="p-3 bg-white border-t border-gray-200 flex gap-2 items-end shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                        <textarea id="chat-input" rows="2" class="flex-grow p-3 border border-gray-300 rounded-lg text-sm focus:border-[#78350f] focus:ring-1 focus:ring-[#78350f] outline-none resize-none shadow-inner" placeholder="請回答倪師的追問，或輸入您的疑問..." onkeypress="handleEnter(event)"></textarea>
+                        
+                        <button onclick="sendChatMessage()" id="send-btn" class="bg-[#1c1917] hover:bg-black text-white px-5 py-3 rounded-lg shadow-md transition-all active:scale-95 flex items-center gap-2 whitespace-nowrap h-full">
+                            <i class="fa-solid fa-paper-plane"></i> <span class="font-bold">發送</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="api-modal" class="fixed inset-0 bg-black/80 z-[60] hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white p-6 rounded-lg shadow-2xl w-96">
+            <h3 class="text-lg font-bold mb-4 text-[#2d2a26]">系統設定</h3>
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-gray-500 mb-1">Gemini API Key</label>
+                <input type="password" id="custom-api-key" class="w-full p-2 border rounded focus:border-[#78350f] outline-none" placeholder="貼上您的 API Key">
+                <p id="fixed-key-msg" class="text-[10px] text-green-600 mt-1 hidden"><i class="fa-solid fa-lock"></i> 已偵測到程式碼內建金鑰，可略過此步驟。</p>
+            </div>
+            <div class="flex justify-end gap-2">
+                <button onclick="document.getElementById('api-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded text-sm">取消</button>
+                <button onclick="saveApiKey(event)" class="px-4 py-2 bg-[#1c1917] text-white rounded hover:bg-black text-sm transition-all duration-200">永久儲存</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="history-drawer" class="fixed inset-y-0 right-0 w-96 bg-white shadow-2xl z-[55] transform translate-x-full transition-transform duration-300 flex flex-col border-l border-gray-200">
+        <div class="p-4 bg-[#1c1917] text-white flex justify-between items-center">
+            <h3 class="font-bold flex items-center gap-2"><i class="fa-solid fa-server"></i> 歷史病歷庫 (Local/Cloud)</h3>
+            <button onclick="toggleHistory()" class="hover:text-gray-300"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div id="history-list" class="flex-grow overflow-y-auto p-2 space-y-2 bg-[#f5f5f4]"></div>
+    </div>
+    <div id="drawer-overlay" class="fixed inset-0 bg-black/50 z-[50] hidden" onclick="toggleHistory()"></div>
+
+    <div id="lightbox-modal" class="fixed inset-0 z-[80] hidden flex items-center justify-center bg-black/95 backdrop-blur" onclick="closeLightbox()">
+        <img id="lightbox-img" src="" class="max-w-[95%] max-h-[95%] object-contain shadow-2xl rounded">
+        <button class="absolute top-4 right-4 text-white text-3xl hover:text-gray-300"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    
+    <div id="toast" class="toast">已儲存至本地紀錄</div>
+
+    <script>
+        // ============================================
+        // 【使用者設定區】請在此固化 API KEY
+        // ============================================
+        
+        // 請將您的 Google Gemini API Key 填入下方的引號中
+        const FIXED_API_KEY = ""; 
+        
+        // ============================================
+
+        // --- 變數 ---
+        let userApiKey = "";
+        let imgData = { tongue: null, face: null, sleep: null, hr: null, hrv: null, spo2: null };
+        let chatHistory = [];
+        let currentRecordId = null; 
+        let initialContext = "";
+
+        const questionsBase = [
+            { id: 'q1', text: '一、睡眠 (Sleep)', options: ['一覺到天亮', '入睡困難 (心)', '半夜醒 (肝/肺)', '嗜睡 (少陰)'] },
+            { id: 'q2', text: '二、胃口 (Appetite)', options: ['正常', '食慾過旺 (熱)', '無食慾 (寒/虛)', '噁心 (水飲)'] },
+            { id: 'q3', text: '三、口渴 (Thirst)', options: ['不渴', '喜冷飲', '喜熱飲', '渴不欲飲'] },
+            { id: 'q4', text: '四、大便 (Stool)', options: ['每日正常', '便秘 (無痛)', '便秘 (腹痛)', '下利 (拉肚)'] },
+            { id: 'q5', text: '五、小便 (Urine)', options: ['淡黃', '深黃 (熱)', '清白 (寒)', '頻尿/痛'] },
+            { id: 'q6', text: '六、手腳 (Limbs)', options: ['溫熱', '冰冷', '手熱足冷', '煩熱'] },
+            { id: 'q7', text: '七、流汗 (Sweat)', options: ['正常', '無汗 (表實)', '自汗 (表虛)', '盜汗 (陰虛)'] },
+            { id: 'q8', text: '八、寒熱 (Temp)', options: ['正常', '怕冷', '怕熱', '忽冷忽熱'] },
+            { id: 'q9', text: '九、身痛/體力', options: ['正常', '身痛/骨節痛', '易疲倦', '麻木'] },
+            { id: 'q10', text: '十、生理/其他', options: ['正常', '異常 (痛經/陽痿)', '無'] }
+        ];
+
+        // --- API 重試機制 (防禦 429 錯誤) ---
+        const fetchWithRetry = async (url, options, maxRetries = 5) => {
+            let retries = 0;
+            while (retries <= maxRetries) {
+                try {
+                    const response = await fetch(url, options);
+                    if (!response.ok) {
+                        const err = new Error(`API Error: ${response.status}`);
+                        err.status = response.status;
+                        throw err;
+                    }
+                    return response;
+                } catch (error) {
+                    // 若是因逾時(Abort)主動中止，直接丟出不重試
+                    if (error.name === 'AbortError') {
+                        throw error;
+                    }
+                    // 若是 400 格式錯誤、403 金鑰錯誤、404 找不到模型，直接報錯不重試
+                    if (error.status && [400, 403, 404].includes(error.status)) {
+                        throw error;
+                    }
+                    if (retries >= maxRetries) {
+                        if (error.status === 429) {
+                            throw new Error("請求太頻繁 (API 429 Error)，請稍等一分鐘後再試。");
+                        }
+                        throw error;
+                    }
+                    const delay = Math.pow(2, retries) * 1000;
+                    await new Promise(resolve => setTimeout(resolve, delay));
+                    retries++;
+                }
+            }
+        };
+
+        // --- 初始化 ---
+        window.addEventListener('load', () => {
+            const container = document.getElementById('questions-container');
+            container.innerHTML = questionsBase.map(q => {
+                const finalOptions = [...q.options, '以上皆非 (詳見自述)'];
+                return `
+                <div class="border-b border-gray-100 pb-4 last:border-0">
+                    <div class="font-bold text-[#78350f] text-sm mb-3">${q.text}</div>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3">
+                        ${finalOptions.map((opt, i) => {
+                            const isOther = opt.includes('以上皆非');
+                            return `
+                            <label class="radio-label ${isOther ? 'radio-label-other' : ''}">
+                                <input type="radio" name="${q.id}" value="${opt}" class="hidden" ${i===0?'checked':''}>
+                                <span class="text-xs ${isOther ? 'text-gray-500' : 'text-gray-700'} w-full">${opt}</span>
+                            </label>
+                        `}).join('')}
+                    </div>
+                    <input type="text" id="detail-${q.id}" class="note-input" placeholder="✎ 補充/自述細節...">
+                </div>
+            `}).join('');
+
+            if(FIXED_API_KEY && FIXED_API_KEY.length > 10) {
+                userApiKey = FIXED_API_KEY;
+                updateApiStatus(true);
+                document.getElementById('fixed-key-msg').classList.remove('hidden');
+                document.getElementById('custom-api-key').value = "(已使用程式碼內建金鑰)";
+                document.getElementById('custom-api-key').disabled = true;
+            } else {
+                const savedKey = localStorage.getItem('gemini_api_key');
+                if(savedKey) { 
+                    userApiKey = savedKey; 
+                    document.getElementById('custom-api-key').value = savedKey; 
+                    updateApiStatus(true); 
+                } else { 
+                    const apiKey = ""; 
+                    if(apiKey) { userApiKey = apiKey; updateApiStatus(true); } 
+                    else { updateApiStatus(false); }
+                }
+            }
+        });
+
+        function updateApiStatus(connected) {
+            const badge = document.getElementById('api-status-display');
+            if(connected) { badge.innerHTML = '<i class="fa-solid fa-link"></i> API 已連線'; badge.classList.remove('inactive'); badge.classList.add('active'); } 
+            else { badge.innerHTML = '<i class="fa-solid fa-link-slash"></i> 未連線'; badge.classList.remove('active'); badge.classList.add('inactive'); }
+        }
+
+        window.saveApiKey = (event) => {
+            if(FIXED_API_KEY && FIXED_API_KEY.length > 10) {
+                 document.getElementById('api-modal').classList.add('hidden');
+                 return;
+            }
+            const k = document.getElementById('custom-api-key').value.trim();
+            if(k) { 
+                localStorage.setItem('gemini_api_key', k); 
+                userApiKey = k; 
+                updateApiStatus(true); 
+                if(event && event.target) {
+                    const btn = event.target;
+                    const originalText = btn.innerText;
+                    btn.innerText = "已儲存！";
+                    btn.classList.add("bg-green-600");
+                    setTimeout(() => {
+                        document.getElementById('api-modal').classList.add('hidden');
+                        btn.innerText = originalText;
+                        btn.classList.remove("bg-green-600");
+                    }, 1000);
+                } else {
+                    document.getElementById('api-modal').classList.add('hidden');
+                }
+            }
+        };
+
+        function compressImage(file, maxWidth = 800, quality = 0.6) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let width = img.width;
+                        let height = img.height;
+                        if (width > maxWidth) {
+                            height = Math.round(height * (maxWidth / width));
+                            width = maxWidth;
+                        }
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', quality));
+                    };
+                    img.onerror = reject;
+                    img.src = e.target.result;
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        window.previewImage = async (input, type) => { 
+            if (input.files[0]) { 
+                try {
+                    const compressedDataUrl = await compressImage(input.files[0]);
+                    setPreview(type, compressedDataUrl);
+                } catch (e) {
+                    console.error("Image compression failed", e);
+                    alert("圖片處理失敗，請試著使用較小的圖片。");
+                }
+            } 
+        };
+
+        function setPreview(type, dataUrl) {
+            const preview = document.getElementById(`${type}-preview`);
+            const placeholder = document.getElementById(`${type}-placeholder`);
+            const clearBtn = document.getElementById(`${type}-clear`);
+            
+            preview.src = dataUrl;
+            preview.classList.remove('hidden');
+            placeholder.classList.add('hidden');
+            clearBtn.classList.remove('hidden');
+            
+            imgData[type] = dataUrl.split(',')[1];
+        }
+
+        window.clearImage = (type) => { 
+            event.stopPropagation(); 
+            document.getElementById(`${type}-preview`).classList.add('hidden'); 
+            document.getElementById(`${type}-placeholder`).classList.remove('hidden'); 
+            document.getElementById(`${type}-clear`).classList.add('hidden'); 
+            document.getElementById(`${type}-image`).value = ''; 
+            imgData[type] = null; 
+        };
+        
+        window.openLightbox = (id) => { document.getElementById('lightbox-img').src = document.getElementById(id).src; document.getElementById('lightbox-modal').classList.remove('hidden'); };
+        window.closeLightbox = () => document.getElementById('lightbox-modal').classList.add('hidden');
+
+        // --- UI Toggle Functions ---
+        window.toggleSection = (id) => {
+            const el = document.getElementById(id);
+            el.classList.toggle('hidden');
+        };
+
+        window.toggleResultSize = () => {
+            const card = document.getElementById('result-card-container');
+            const icon = document.getElementById('result-toggle-icon');
+            if (card.style.maxHeight === '45%') {
+                card.style.maxHeight = '85%';
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            } else {
+                card.style.maxHeight = '45%';
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            }
+        };
+
+        // --- 核心邏輯：初始分析 ---
+        window.startInitialAnalysis = async () => {
+            const btn = document.getElementById('analyze-btn');
+            const msg = document.getElementById('error-msg');
+            
+            let activeKey = userApiKey;
+            if(FIXED_API_KEY && FIXED_API_KEY.length > 10) { activeKey = FIXED_API_KEY; }
+
+            const envKey = ""; 
+            if(!activeKey && !envKey) { document.getElementById('api-modal').classList.remove('hidden'); return; }
+            
+            msg.classList.add('hidden');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loader"></span> 處理影像與資料中...';
+
+            const gender = document.querySelector('input[name="gender"]:checked').value;
+            const age = document.getElementById('age').value;
+            const height = document.getElementById('height').value;
+            const weight = document.getElementById('weight').value;
+            const complaint = document.getElementById('main-complaint').value || "無";
+            
+            let qData = "";
+            questionsBase.forEach(q => {
+                const val = document.querySelector(`input[name="${q.id}"]:checked`).value;
+                const detail = document.getElementById(`detail-${q.id}`).value;
+                if (val.includes("以上皆非")) { qData += `【${q.text}】選項: [無效] | ★關鍵自述: "${detail || '未填寫'}"\n`; }
+                else { qData += `【${q.text}】選項: ${val} ${detail ? '| 自述: '+detail : ''}\n`; }
+            });
+
+            initialContext = `病患：${gender}, ${age}歲, 身高${height}cm, 體重${weight}kg。主訴：${complaint}。問診資料：\n${qData}`;
+            
+            chatHistory = [];
+            currentRecordId = Date.now().toString(); 
+            document.getElementById('chat-box').innerHTML = '';
+            document.getElementById('result-card-container').classList.add('hidden'); // 初始不顯示處方，因為要先問診
+            document.getElementById('intro-state').classList.add('hidden');
+            document.getElementById('interaction-area').classList.remove('hidden');
+            document.getElementById('interaction-area').classList.add('flex');
+            document.getElementById('user-note').value = ''; 
+
+            btn.innerHTML = '<span class="loader"></span> 倪師望聞問切中...';
+            await callAI(initialContext, true);
+            
+            btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-bolt"></i> 啟動二階段辨證';
+        };
+
+        // --- 核心邏輯：AI 呼叫 ---
+        async function callAI(contextInput, isInitial = false) {
+            updateChatStatus("倪師思考中...");
+            
+            let historyText = chatHistory.map(m => `${m.role === 'ni' ? '倪師' : '病患'}: ${m.text}`).join('\n');
+            
+            const systemPrompt = `
+            你現在是漢唐中醫 **倪海廈 (Ni Haixia)** 院長。你的辨證風格與用藥邏輯必須**完全百分之百**遵照倪師的教學與《人紀》、《傷寒論》、《金匱要略》。
+
+            【診斷流程 (Mandatory Two-Step Process)】：
+            1.  **階段一：初步辨證與追問 (Inquiry Phase)**
+                - **絕對不要直接開方**。
+                - 結合望診 (圖片) 與初診資料，判斷可能的病機方向 (例如：「疑似少陽證」或「疑似太陰證」)。
+                - 為了求證，**必須反問病患 3-5 個關鍵問題** (鑑別診斷)。例如：若懷疑少陽，需問口苦咽乾、忽冷忽熱；懷疑太陰，需問腹痛與大便。
+                - 輸出 type: "inquiry"。
+            
+            2.  **階段二：確診與開方 (Diagnosis Phase)**
+                - 只有當病患回答了上述追問後，才進行確診。
+                - 輸出 type: "diagnosis" 並開出處方。
+
+            【望診分析】：
+            - **舌象**：觀察舌苔(寒熱)、舌質(虛實)、齒痕(濕)。
+            - **面相 (新增)**：
+              - 面色青(肝/痛/寒)、赤(心/熱)、黃(脾/濕)、白(肺/虛/寒)、黑(腎/痛/水)。
+              - 眼神：有神(病輕)、無神(病重)。
+              - 氣色：光澤(吉)、晦暗(凶)。
+
+            【劑量法則】：
+            - 必須參考病患的**身高體重**來決定劑量。
+            - 體格壯實/體重過重者：麻黃、桂枝、附子、石膏等主藥劑量需加重。
+
+            【輸出 JSON 格式 (嚴禁 Markdown)】：
+            - **若是階段一 (追問)**：
+              {
+                  "type": "inquiry",
+                  "ni_chat_reply": "【倪師望診初步分析】\n(請簡述對舌象/面相的觀察，例如：面色偏青，舌苔白膩...)\n\n【進一步追問】\n(請列出 3-5 個關鍵問題來確認病機，語氣要像倪師親自問診，例如：'這很重要，你早上起來嘴巴苦不苦？')"
+              }
+            
+            - **若是階段二 (確診)**：
+              {
+                  "type": "diagnosis",
+                  "diagnosis_data": { 
+                      "stage": "六經", 
+                      "bagang": "八綱",
+                      "pathology": "病機",
+                      "bone_formula": "經方主方名",
+                      "bone_herbs": [ {"name":"藥名","dose":"劑量(錢/兩)"} ],
+                      "modifications": [ {"name":"藥名","dose":"劑量","action":"加/減","reason":"理由"} ],
+                      "reason": "方義解析",
+                      "ni_comment": "倪師點評 (包含生活建議)"
+                  },
+                  "ni_chat_reply": "根據你的回答，這已經很明顯了，這是... (解釋為何確診此方)"
+              }
+            `;
+
+            const fullPrompt = `${systemPrompt}\n\n【原始資料】\n${initialContext}\n\n【對話紀錄】\n${historyText}\n\n${isInitial ? '這是初診。請觀察舌象、面相與數據，並進行初步分析與「追問」(type: inquiry)。不要直接開方。' : '病患已回答，請根據他的回答進行確診 (type: diagnosis)。'}`;
+
+            try {
+                let keyToUse = (FIXED_API_KEY && FIXED_API_KEY.length > 10) ? FIXED_API_KEY : userApiKey;
+                keyToUse = keyToUse ? keyToUse.trim() : "";
+                
+                if (!keyToUse) {
+                    const envKey = ""; 
+                    if(envKey) keyToUse = envKey;
+                }
+
+                if (!keyToUse) {
+                    appendChatBubble('ni', "系統提示：請先點擊右上角「設定」，輸入您的 Google Gemini API Key 才能開始辨證。");
+                    updateChatStatus("等待設定");
+                    document.getElementById('api-modal').classList.remove('hidden');
+                    const loadingBubble = document.getElementById('loading-bubble');
+                    if(loadingBubble) loadingBubble.remove();
+                    return;
+                }
+
+                const parts = [{ text: fullPrompt }];
+                if(isInitial) {
+                    for(let k in imgData) { 
+                        if(imgData[k]) {
+                            parts.push({ inlineData: { mimeType: "image/jpeg", data: imgData[k] } }); 
+                        } 
+                    }
+                }
+
+                // 改走本地 RAG 伺服器：限定倪海廈中醫新庫(domain=tcm) + gemini-3.5-flash
+                const url = `http://127.0.0.1:8765/gemini?domain=tcm&key=${keyToUse}`;
+                const body = JSON.stringify({ contents: [{ parts }], generationConfig: { responseMimeType: "application/json" } });
+
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 60000); 
+
+                try {
+                    // 使用 fetchWithRetry 防止 429 錯誤中斷
+                    const res = await fetchWithRetry(url, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: body,
+                        signal: controller.signal
+                    });
+                    clearTimeout(timeoutId);
+
+                    const json = await res.json();
+                    
+                    if (json.error) {
+                        throw new Error(json.error.message);
+                    }
+                    
+                    let raw = json.candidates[0].content.parts[0].text;
+                    raw = raw.replace(/```json/g, '').replace(/```/g, '').trim();
+                    const result = JSON.parse(raw);
+                    handleAIResponse(result);
+
+                } catch (fetchError) {
+                    clearTimeout(timeoutId);
+                    throw fetchError;
+                }
+
+            } catch(e) {
+                console.error(e);
+                const loadingBubble = document.getElementById('loading-bubble');
+                if(loadingBubble) loadingBubble.remove();
+                
+                let errorMsg = "系統提示：" + e.message;
+                
+                if (e.name === 'AbortError') {
+                    errorMsg = "連線逾時。請減少圖片數量或檢查網路。";
+                } else if (e.message.includes("API key")) {
+                    errorMsg = "API Key 無效。請檢查您的金鑰。";
+                }
+                
+                appendChatBubble('ni', errorMsg);
+                updateChatStatus("連線中斷");
+            }
+        }
+
+        function handleAIResponse(res) {
+            updateChatStatus("等待輸入");
+            
+            const loadingBubble = document.getElementById('loading-bubble');
+            if(loadingBubble) loadingBubble.remove();
+            
+            if (res.type === 'inquiry') {
+                // 階段一：隱藏處方卡，顯示追問
+                document.getElementById('result-card-container').classList.add('hidden');
+                appendChatBubble('ni', res.ni_chat_reply);
+                // 可以自動聚焦輸入框
+                document.getElementById('chat-input').focus();
+            } else if (res.type === 'diagnosis') {
+                // 階段二：顯示處方
+                renderDiagnosis(res.diagnosis_data);
+                document.getElementById('result-card-container').classList.remove('hidden');
+                
+                if (res.ni_chat_reply && res.ni_chat_reply.trim() !== "") {
+                    appendChatBubble('ni', res.ni_chat_reply);
+                }
+                
+                saveRecord(res.diagnosis_data);
+            }
+        }
+
+        // --- 聊天功能 ---
+        function appendChatBubble(role, text) {
+            const box = document.getElementById('chat-box');
+            const bubble = document.createElement('div');
+            bubble.className = `chat-bubble ${role === 'ni' ? 'chat-ni' : 'chat-user'}`;
+            bubble.innerHTML = text.replace(/\n/g, '<br>');
+            box.appendChild(bubble);
+            box.scrollTop = box.scrollHeight;
+            if(role !== 'loading') { chatHistory.push({ role, text }); }
+            return bubble;
+        }
+
+        function showLoadingBubble() {
+            const box = document.getElementById('chat-box');
+            const bubble = document.createElement('div');
+            bubble.id = 'loading-bubble';
+            bubble.className = 'chat-bubble chat-ni flex items-center gap-1';
+            bubble.innerHTML = '<span class="text-xs text-gray-400 font-bold mr-1">倪師思考中</span><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>';
+            box.appendChild(bubble);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function handleEnter(e) { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }
+
+        function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if(!text) return;
+            appendChatBubble('user', text);
+            input.value = '';
+            showLoadingBubble();
+            callAI("", false); 
+        }
+
+        function updateChatStatus(status) { document.getElementById('chat-status').innerText = status; }
+
+        function renderDiagnosis(data) {
+            document.getElementById('diagnosis-stage').innerText = data.stage;
+            document.getElementById('pathology').innerText = data.pathology;
+            document.getElementById('bagang-details').innerText = data.bagang;
+            document.getElementById('rx-name').innerText = data.bone_formula;
+            document.getElementById('herb-bone-list').innerHTML = data.bone_herbs.map(h => `<div class="flex justify-between border-b border-gray-100 pb-1"><span class="font-bold text-[#78350f]">${h.name}</span><span class="font-mono text-gray-600">${h.dose}</span></div>`).join('');
+            if(data.modifications && data.modifications.length > 0) {
+                 const modHTML = data.modifications.map(m => `<div class="flex justify-between border-b border-dashed border-gray-200 pb-1 ${m.action==='加'?'text-green-700':'text-red-700'}"><span class="font-bold text-xs"><i class="fa-solid ${m.action==='加'?'fa-plus':'fa-minus'}"></i> ${m.name}</span><span class="font-mono text-xs">${m.dose}</span></div>`).join('');
+                document.getElementById('herb-bone-list').innerHTML += modHTML;
+            }
+            document.getElementById('rx-reason').innerText = data.reason;
+            document.getElementById('ni-comment').innerText = data.ni_comment;
+        }
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.innerText = msg;
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        function saveUserNote() {
+            const note = document.getElementById('user-note').value;
+            if(!currentRecordId) return;
+            
+            try {
+                const localHistory = JSON.parse(localStorage.getItem('ni_tcm_records') || '[]');
+                const idx = localHistory.findIndex(r => r.id == currentRecordId || r.timestamp == currentRecordId); 
+                
+                if (idx !== -1) {
+                    localHistory[idx].userNote = note;
+                    localStorage.setItem('ni_tcm_records', JSON.stringify(localHistory));
+                    showToast("備註已保存");
+                }
+            } catch(e) { console.error(e); showToast("保存失敗"); }
+        }
+
+        async function saveRecord(diagnosisData) {
+            const record = {
+                id: currentRecordId || Date.now().toString(),
+                timestamp: new Date().toISOString(),
+                diagnosis: diagnosisData.stage,
+                formula: diagnosisData.bone_formula,
+                fullResult: diagnosisData,
+                chatLog: chatHistory,
+                userNote: document.getElementById('user-note').value || "",
+                images: { ...imgData },
+                source: 'local'
+            };
+            
+            try {
+                const localHistory = JSON.parse(localStorage.getItem('ni_tcm_records') || '[]');
+                const existingIdx = localHistory.findIndex(r => r.id == record.id);
+                
+                if (existingIdx !== -1) {
+                    localHistory[existingIdx] = record;
+                } else {
+                    localHistory.unshift(record);
+                    if(localHistory.length > 30) localHistory.pop();
+                }
+
+                try {
+                    localStorage.setItem('ni_tcm_records', JSON.stringify(localHistory));
+                    showToast("已自動儲存至本地病歷 (含圖片)");
+                } catch (quotaError) {
+                    console.warn("Storage Quota Exceeded. Removing images to save text data.");
+                    record.images = {}; 
+                    if (existingIdx !== -1) localHistory[existingIdx] = record;
+                    else localHistory[0] = record;
+                    
+                    localStorage.setItem('ni_tcm_records', JSON.stringify(localHistory));
+                    showToast("空間不足，僅儲存文字病歷");
+                }
+
+            } catch(e) {
+                console.error("Local Storage Save Failed", e);
+                showToast("本地儲存失敗");
+            }
+
+            if(window.db && window.userId) {
+                try {
+                    const appId = (typeof __app_id !== 'undefined') ? __app_id : 'ni-tcm-v64-local';
+                    const colRef = window.firebaseModules.collection(window.db, 'artifacts', appId, 'users', window.userId, 'records');
+                    
+                    const cloudRecord = { 
+                        ...record, 
+                        timestamp: window.firebaseModules.serverTimestamp(), 
+                        source: 'cloud',
+                        images: {} 
+                    };
+
+                    if (currentRecordId) {
+                         await window.firebaseModules.addDoc(colRef, cloudRecord);
+                    }
+                    console.log("Cloud Backup Success");
+                } catch(e) { console.error("Cloud Save Error (Ignore if offline)", e); }
+            }
+        }
+
+        window.deleteLocalRecord = (event, id) => {
+            if(event) event.stopPropagation();
+            if(!confirm("【注意】您確定要永久刪除這筆病歷嗎？")) return;
+            
+            try {
+                let localHistory = JSON.parse(localStorage.getItem('ni_tcm_records') || '[]');
+                const originalLen = localHistory.length;
+                const newHistory = localHistory.filter(r => r.id != id && r.timestamp != id);
+                
+                if(newHistory.length === originalLen) {
+                    alert("刪除失敗：找不到對應的 ID");
+                    return;
+                }
+
+                localStorage.setItem('ni_tcm_records', JSON.stringify(newHistory));
+                toggleHistory();
+                showToast("病歷已成功刪除");
+            } catch(e) {
+                console.error(e);
+                alert("刪除時發生錯誤：" + e.message);
+            }
+        };
+
+        window.loadLocalRecord = (id) => {
+             const localData = JSON.parse(localStorage.getItem('ni_tcm_records') || '[]');
+             const record = localData.find(r => r.id == id || r.timestamp == id); 
+             if(record) {
+                 displayHistory(record);
+             } else {
+                 alert("讀取失敗：找不到病歷資料");
+             }
+        };
+
+        window.displayHistory = (d) => {
+            currentRecordId = d.id;
+            
+            if(d.fullResult) renderDiagnosis(d.fullResult);
+            
+            if (d.images) {
+                imgData = d.images;
+                for(let type in d.images) {
+                    if(d.images[type]) {
+                        setPreview(type, `data:image/jpeg;base64,${d.images[type]}`);
+                    } else {
+                         document.getElementById(`${type}-preview`).classList.add('hidden'); 
+                         document.getElementById(`${type}-placeholder`).classList.remove('hidden'); 
+                         document.getElementById(`${type}-clear`).classList.add('hidden');
+                    }
+                }
+            }
+
+            document.getElementById('user-note').value = d.userNote || "";
+
+            document.getElementById('intro-state').classList.add('hidden');
+            document.getElementById('interaction-area').classList.remove('hidden');
+            document.getElementById('interaction-area').classList.add('flex');
+            // 若為 Inquiry 狀態，歷史紀錄應該顯示最後的狀態，若已經是診斷結果則顯示卡片
+            if(d.fullResult) document.getElementById('result-card-container').classList.remove('hidden');
+            else document.getElementById('result-card-container').classList.add('hidden');
+
+            const box = document.getElementById('chat-box');
+            box.innerHTML = '';
+            if(d.chatLog) { d.chatLog.forEach(m => appendChatBubble(m.role, m.text)); }
+            
+            const drawer = document.getElementById('history-drawer');
+            const overlay = document.getElementById('drawer-overlay');
+            drawer.classList.add('translate-x-full');
+            overlay.classList.add('hidden');
+        };
+
+        window.toggleHistory = () => { 
+            const d=document.getElementById('history-drawer'); 
+            const o=document.getElementById('drawer-overlay'); 
+            const l=document.getElementById('history-list'); 
+            
+            if(d.classList.contains('translate-x-full')){ 
+                d.classList.remove('translate-x-full'); 
+                o.classList.remove('hidden'); 
+                
+                let html = '';
+                try {
+                    const localData = JSON.parse(localStorage.getItem('ni_tcm_records') || '[]');
+                    if(localData.length > 0) {
+                        html += `<div class="px-2 py-1 text-xs font-bold text-gray-500 bg-gray-200">本地存儲 (含圖片)</div>`;
+                        html += localData.map((data) => {
+                            const dateStr = new Date(data.timestamp).toLocaleString();
+                            const safeId = data.id || data.timestamp;
+                            
+                            return `
+                            <div class="history-item bg-white p-3 rounded border-l-4 border-green-600 shadow-sm mb-2 mx-2 relative group hover:bg-green-50 transition-colors">
+                                <div class="cursor-pointer" onclick="window.loadLocalRecord('${safeId}')">
+                                    <div class="font-bold text-sm text-gray-800">${data.formula || '未完成診斷 (問診中)'}</div>
+                                    <div class="text-xs text-gray-500">${dateStr}</div>
+                                </div>
+                                <button onclick="window.deleteLocalRecord(event, '${safeId}')" class="delete-btn absolute top-2 right-2 text-gray-400 p-2 rounded-full cursor-pointer" title="刪除此紀錄">
+                                    <i class="fa-solid fa-trash-can text-lg"></i>
+                                </button>
+                            </div>`;
+                        }).join('');
+                    }
+                } catch(e) { console.error("Read Local Error", e); }
+
+                if(html === '') html = '<div class="p-4 text-center text-xs text-gray-500">尚無本地紀錄</div>';
+                l.innerHTML = html;
+
+            } else { d.classList.add('translate-x-full'); o.classList.add('hidden'); } 
+        };
+
+    </script>
+</body>
+</html>

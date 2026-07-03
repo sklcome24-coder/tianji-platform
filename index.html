@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>天紀・倪海廈 中醫命理 免費分享平台</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body{font-family:"Noto Serif TC",serif;background:#f5f5f4;color:#292524;}
+  .card{background:#fff;border:1px solid #e7e5e4;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.06);transition:.2s;}
+  .card:hover{box-shadow:0 6px 20px rgba(0,0,0,.12);transform:translateY(-3px);}
+  .dot{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:6px;vertical-align:middle;}
+</style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+<header class="bg-[#1c1917] text-[#e7e5e4] py-4 px-6 shadow-md">
+  <div class="max-w-4xl mx-auto text-center">
+    <h1 class="text-xl md:text-2xl font-bold tracking-wider">
+      <span class="bg-[#78350f] text-[#fef3c7] px-2 py-0.5 rounded-sm">天紀</span>
+      倪海廈 中醫・命理 學習分享平台
+    </h1>
+    <p class="text-[12px] text-[#a8a29e] mt-1">非營利 · 傳承倪師體系 · 願以此救世助人 · 謹向倪海廈醫師致敬</p>
+  </div>
+</header>
+
+<!-- 知識庫狀態列（僅在本機環境可連上） -->
+<div id="statusbar" class="bg-amber-50 border-b border-amber-200 text-center py-2" style="display:none">
+  <span id="status" class="text-[12px] text-amber-700"></span>
+</div>
+
+<main class="flex-1 max-w-4xl mx-auto w-full p-6">
+  <p class="text-center text-stone-500 text-sm mb-8 leading-relaxed">
+    兩套系統的排盤、卦象、辨證功能皆可直接使用。<br class="hidden md:block">
+    AI 小助理問答功能需連接本機「倪海廈知識庫」，僅在本機環境提供。
+  </p>
+
+  <div class="grid md:grid-cols-2 gap-6">
+    <!-- 紫微 / 命理 -->
+    <a href="./ziwei.html" class="card p-6 block no-underline text-inherit">
+      <div class="text-4xl mb-3">🔮</div>
+      <h2 class="text-lg font-bold text-[#78350f] mb-2">天紀紫微・易卦神機</h2>
+      <p class="text-[13px] text-stone-600 leading-relaxed">
+        紫微斗數排盤解讀、易經六十四卦、梅花易數、陽宅風水、三才改運。
+        傳承倪師《天紀》體系，以命盤與卦象為據推理。
+      </p>
+      <div class="mt-4 text-[12px] text-amber-700 font-bold">進入 →</div>
+    </a>
+
+    <!-- 中醫 / 經方 -->
+    <a href="./jingfang.html" class="card p-6 block no-underline text-inherit">
+      <div class="text-4xl mb-3">🌿</div>
+      <h2 class="text-lg font-bold text-[#78350f] mb-2">經方辨正系統</h2>
+      <p class="text-[13px] text-stone-600 leading-relaxed">
+        六經辨證、經方開立、醫案對照。傳承《傷寒論》《金匱要略》《人紀》與漢唐醫案，
+        依倪師辨證思路與方劑心法作答。
+      </p>
+      <div class="mt-4 text-[12px] text-amber-700 font-bold">進入 →</div>
+    </a>
+  </div>
+
+  <div class="mt-10 text-center text-[12px] text-stone-400 leading-relaxed">
+    本平台為非營利學習分享用途。倪海廈老師教學著作權歸倪師／漢唐中醫所有。<br>
+    內容為學習參考，不構成診療或處方，就醫請諮詢合格醫師。
+  </div>
+</main>
+
+<footer class="bg-[#1c1917] text-[#a8a29e] text-center text-[11px] py-3">
+  天紀免費分享平台
+</footer>
+
+<script>
+  // 嘗試連接本機 RAG 後端；連得上才顯示狀態列（雲端訪客不會看到錯誤訊息）
+  fetch("http://127.0.0.1:8765/health").then(r=>r.json()).then(d=>{
+    if(d && d.ok){
+      const bar = document.getElementById("statusbar");
+      const s = document.getElementById("status");
+      bar.style.display = "";
+      s.innerHTML = '<span class="dot" style="background:#16a34a"></span>知識庫服務運作中（模型：'+(d.model||'—')+'）';
+      s.className = "text-[12px] text-green-700";
+    }
+  }).catch(()=>{ /* 雲端環境連不到本機知識庫，屬正常情況，不顯示錯誤 */ });
+</script>
+</body>
+</html>
