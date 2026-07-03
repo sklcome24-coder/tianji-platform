@@ -31,8 +31,8 @@
 })();
 </script>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-欸scale=1.0, user-scalable=no">
-    <title>倪海廈經方系統 (v64 深度辨證版)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>倪海廈經方系統 (v65 安全辨證版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
@@ -130,7 +130,7 @@
                     倪海廈數位系統
                 </h1>
                 <p class="text-xs text-[#a8a29e] mt-1 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-green-500"></span> 深度辨證版 (v64)
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span> 安全辨證版 (v65)
                 </p>
             </div>
             <div class="flex items-center gap-3">
@@ -257,7 +257,21 @@
                 </div>
             </div>
 
-            <!-- 3. 主訴 -->
+            <!-- 3. 特殊情況（安全把關） -->
+            <div class="zen-card" style="border-color:#fecaca;">
+                <div class="zen-header" style="color:#991b1b;background:#fef2f2;"><i class="fa-solid fa-shield-heart"></i> 特殊情況（安全把關，可複選）</div>
+                <div class="p-4 space-y-2">
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <label class="radio-label"><input type="checkbox" id="sp-pregnant" class="mr-2 accent-red-700"><span>懷孕／備孕／哺乳中</span></label>
+                        <label class="radio-label"><input type="checkbox" id="sp-westmed" class="mr-2 accent-red-700"><span>正在服用西藥</span></label>
+                        <label class="radio-label"><input type="checkbox" id="sp-allergy" class="mr-2 accent-red-700"><span>藥物／食物過敏史</span></label>
+                        <label class="radio-label"><input type="checkbox" id="sp-chronic" class="mr-2 accent-red-700"><span>慢性病（心／肝／腎／糖尿／高血壓）</span></label>
+                    </div>
+                    <input type="text" id="sp-detail" class="note-input" placeholder="✎ 詳述：藥名、病名、孕週等（此欄影響用藥安全，請務必填寫）">
+                </div>
+            </div>
+
+            <!-- 4. 主訴 -->
             <div class="zen-card">
                 <div class="zen-header"><i class="fa-solid fa-comment-medical"></i> 核心主訴</div>
                 <div class="p-4">
@@ -285,6 +299,9 @@
                     請上傳舌象、<strong>面相</strong>或健康數據。<br>
                     系統將先進行「初步問診」，經您確認症狀後再開方。<br>
                     (資料僅存於本地，隱私安全)
+                </p>
+                <p class="text-[11px] text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2 mt-4 max-w-xs mx-auto leading-relaxed">
+                    ⚕ 本系統為經方<b>教學輔助</b>，處方須經合格中醫師確認後方可使用。<br>胸痛、呼吸困難、中風徵兆等急症——請直接撥打 119。
                 </p>
             </div>
 
@@ -317,15 +334,29 @@
                         <div class="rx-paper rounded shadow-sm p-4 !py-4">
                             <div class="mb-2 border-b border-dashed border-[#d6d3d1] pb-2 flex justify-between items-baseline">
                                 <h3 class="text-[#78350f] font-bold text-lg"><i class="fa-solid fa-mortar-pestle"></i> <span id="rx-name">--</span></h3>
+                                <span id="rx-confidence" class="hidden text-[10px] px-2 py-0.5 rounded-full border font-bold"></span>
                             </div>
                             <div id="herb-bone-list" class="grid grid-cols-3 sm:grid-cols-4 gap-x-2 gap-y-1 text-sm mb-3"></div>
-                            
+
+                            <div id="rx-decoction-box" class="hidden text-xs leading-relaxed bg-emerald-50 border border-emerald-200 text-emerald-900 p-2 rounded mb-2">
+                                <span class="font-bold">【煎服法】</span> <span id="rx-decoction"></span>
+                            </div>
+                            <div id="rx-warnings-box" class="hidden text-xs leading-relaxed bg-red-50 border border-red-300 text-red-800 p-2 rounded mb-2">
+                                <span class="font-bold">⚠【禁忌與停藥警訊】</span> <span id="rx-warnings"></span>
+                            </div>
+
                             <div class="text-xs text-[#44403c] leading-relaxed font-serif text-justify bg-[#fafaf9] p-2 rounded border border-[#f5f5f4]">
                                 <span class="font-bold text-[#78350f]">【方義】</span> <span id="rx-reason"></span>
                             </div>
                              <div class="mt-2 pt-2 border-t border-dashed border-gray-300 text-xs text-[#44403c] italic">
                                 <span class="font-bold text-amber-700">【倪師點評】</span> <span id="ni-comment"></span>
                             </div>
+                             <div id="rx-classic-box" class="hidden mt-2 text-xs text-[#57534e] leading-relaxed"><span class="font-bold text-[#78350f]">【條文佐證】</span> <span id="rx-classic" class="font-serif"></span></div>
+                             <div id="rx-diff-box" class="hidden mt-1 text-xs text-[#57534e] leading-relaxed"><span class="font-bold text-[#78350f]">【鑑別診斷】</span> <span id="rx-diff"></span></div>
+                             <div id="rx-followup-box" class="hidden mt-1 text-xs text-[#57534e] leading-relaxed"><span class="font-bold text-[#78350f]">【回診指標】</span> <span id="rx-followup"></span></div>
+                             <div class="mt-3 pt-2 border-t border-gray-200 text-[10px] text-gray-500 leading-relaxed">
+                                 ⚕ 本系統為經方教學輔助工具，非醫療行為。處方須經<b>合格中醫師</b>當面確認脈證後方可抓藥服用；孕婦、慢性病與服用西藥者尤須主動告知醫師。急症請直接就醫或撥打 119。
+                             </div>
                         </div>
 
                         <!-- 備註區 -->
@@ -422,8 +453,21 @@
             { id: 'q7', text: '七、流汗 (Sweat)', options: ['正常', '無汗 (表實)', '自汗 (表虛)', '盜汗 (陰虛)'] },
             { id: 'q8', text: '八、寒熱 (Temp)', options: ['正常', '怕冷', '怕熱', '忽冷忽熱'] },
             { id: 'q9', text: '九、身痛/體力', options: ['正常', '身痛/骨節痛', '易疲倦', '麻木'] },
-            { id: 'q10', text: '十、生理/其他', options: ['正常', '異常 (痛經/陽痿)', '無'] }
+            { id: 'q10', text: '十、生理/其他', options: ['正常', '異常 (痛經/陽痿)', '無'] },
+            { id: 'q11', text: '十一、脈搏自測 (Pulse)', options: ['未測/不知', '正常 (60-90/分)', '偏快 (>90/分)', '偏慢 (<60/分)'] }
         ];
+
+        // --- 急症紅旗篩查（人命關天，寧可多提醒） ---
+        const RED_FLAGS = [
+            '胸痛','胸悶痛','壓迫感','喘不過','呼吸困難','吐血','咳血','大量出血','血便','黑便',
+            '劇烈頭痛','爆炸性頭痛','單側無力','半身不遂','口齒不清','口歪','嘴歪','眼歪',
+            '意識不清','昏迷','昏倒','抽搐','癲癇','高燒不退','燒到40','頸部僵硬',
+            '劇烈腹痛','腹部僵硬','自殺','輕生','想不開','嚴重過敏','全身起疹','喉嚨腫','吞嚥困難呼吸'
+        ];
+        function scanRedFlags(text) {
+            if (!text) return [];
+            return RED_FLAGS.filter(k => text.includes(k));
+        }
 
         // --- API 重試機制 (防禦 429 錯誤) ---
         const fetchWithRetry = async (url, options, maxRetries = 5) => {
@@ -646,16 +690,34 @@
                 else { qData += `【${q.text}】選項: ${val} ${detail ? '| 自述: '+detail : ''}\n`; }
             });
 
-            initialContext = `病患：${gender}, ${age}歲, 身高${height}cm, 體重${weight}kg。主訴：${complaint}。問診資料：\n${qData}`;
-            
+            // 特殊情況（安全把關）
+            const spFlags = [];
+            if (document.getElementById('sp-pregnant').checked) spFlags.push('懷孕/備孕/哺乳中');
+            if (document.getElementById('sp-westmed').checked) spFlags.push('正在服用西藥');
+            if (document.getElementById('sp-allergy').checked) spFlags.push('藥物/食物過敏史');
+            if (document.getElementById('sp-chronic').checked) spFlags.push('慢性病(心/肝/腎/糖尿/高血壓)');
+            const spDetail = document.getElementById('sp-detail').value.trim();
+            const spText = (spFlags.length || spDetail) ? `⚠️【特殊情況-用藥安全】${spFlags.join('、') || '(未勾選)'}${spDetail ? '；詳述：' + spDetail : ''}` : '特殊情況：無申報';
+
+            // 急症紅旗篩查
+            const allText = complaint + ' ' + spDetail + ' ' + questionsBase.map(q => document.getElementById(`detail-${q.id}`).value).join(' ');
+            const redHits = scanRedFlags(allText);
+            const redText = redHits.length ? `🚨【急症紅旗】病患描述含「${redHits.join('、')}」——回覆第一段必須先評估是否需立即就醫/叫救護車，再進行辨證。` : '';
+
+            initialContext = `病患：${gender}, ${age}歲, 身高${height}cm, 體重${weight}kg。\n${spText}\n${redText}\n主訴：${complaint}。問診資料：\n${qData}`;
+
             chatHistory = [];
-            currentRecordId = Date.now().toString(); 
+            currentRecordId = Date.now().toString();
             document.getElementById('chat-box').innerHTML = '';
             document.getElementById('result-card-container').classList.add('hidden'); // 初始不顯示處方，因為要先問診
             document.getElementById('intro-state').classList.add('hidden');
             document.getElementById('interaction-area').classList.remove('hidden');
             document.getElementById('interaction-area').classList.add('flex');
-            document.getElementById('user-note').value = ''; 
+            document.getElementById('user-note').value = '';
+
+            if (redHits.length) {
+                appendChatBubble('ni', `🚨【緊急安全提醒】您的描述中出現「${redHits.join('、')}」等急症警訊。\n\n若症狀正在發生、突然加劇、或伴隨意識改變——請立刻撥打 119 或前往急診，先救命，再辨證。\n\n以下中醫分析僅供就醫前後之參考，不可取代急救。`);
+            }
 
             btn.innerHTML = '<span class="loader"></span> 倪師望聞問切中...';
             await callAI(initialContext, true);
@@ -672,27 +734,45 @@
             const systemPrompt = `
             你現在是漢唐中醫 **倪海廈 (Ni Haixia)** 院長。你的辨證風格與用藥邏輯必須**完全百分之百**遵照倪師的教學與《人紀》、《傷寒論》、《金匱要略》。
 
+            【第零鐵律：安全高於一切 (Safety First, Non-negotiable)】：
+            0-1. **急症紅旗**：若資料標有🚨急症紅旗，或對話中出現胸痛壓迫、單側無力、口齒不清、劇烈頭痛、呼吸困難、大出血、意識不清、高燒不退、自殺意念等，你的**第一段**必須明確要求「立刻撥打119或前往急診」，之後才做中醫分析。中醫分析不可取代急救。
+            0-2. **有毒藥材規範**（開方時強制執行）：
+                 - 附子：一律用「炮附子」並在煎服法註明「先煎45-60分鐘至不麻口」；嚴禁開生附子、生烏頭給病患自行煎煮。
+                 - 細辛：入湯劑單味不超過1錢，並註明久煎。
+                 - 半夏：一律用「製半夏/薑半夏」。麻黃：心臟病、高血壓、青光眼、攝護腺肥大者慎用並註明。
+                 - 大黃、芒硝：中病即止，得利減量停服。
+            0-3. **配伍自檢**：輸出處方前，逐一檢查十八反（半蔞貝蘞芨攻烏；藻戟遂芫俱戰草；諸參辛芍叛藜蘆）與十九畏，若有牴觸必須換藥並說明。
+            0-4. **特殊人群**：資料若標有⚠️特殊情況——
+                 - 懷孕/備孕/哺乳：禁用或極慎用麻黃、附子、大黃、芒硝、桃仁、紅花、牛膝、三稜、莪朮等；如非用不可，必須明言「須由中醫師當面確認」。
+                 - 正服西藥：檢查重疊風險（如麻黃×降壓藥/心律藥、甘草×利尿劑、活血藥×抗凝血劑），並提醒間隔服用與告知醫師。
+                 - 慢性病（心/肝/腎）：劑量從輕，註明監測事項。兒童與高齡者劑量減半起手。
+            0-5. **誠實鐵律**：望診圖片看不清楚就直說看不清楚；證據不足時寧可退回追問，**嚴禁編造舌象、脈象或症狀來湊一個方**。
+
             【診斷流程 (Mandatory Two-Step Process)】：
             1.  **階段一：初步辨證與追問 (Inquiry Phase)**
                 - **絕對不要直接開方**。
                 - 結合望診 (圖片) 與初診資料，判斷可能的病機方向 (例如：「疑似少陽證」或「疑似太陰證」)。
                 - 為了求證，**必須反問病患 3-5 個關鍵問題** (鑑別診斷)。例如：若懷疑少陽，需問口苦咽乾、忽冷忽熱；懷疑太陰，需問腹痛與大便。
+                - 追問應涵蓋能區分你心中前兩個候選方的「鑑別點」。
                 - 輸出 type: "inquiry"。
-            
+
             2.  **階段二：確診與開方 (Diagnosis Phase)**
                 - 只有當病患回答了上述追問後，才進行確診。
+                - **辨證次第**：主證定六經 → 兼證定加減 → 引《傷寒論》/《金匱》條文佐證 → 至少列出1-2個曾考慮但排除的方劑與排除理由（鑑別診斷）。
+                - **信心度**：高（脈證相符條文吻合）／中（大體吻合但缺脈診或部分資訊）／低（資訊不足，此時應說明還缺什麼，並建議面診）。
                 - 輸出 type: "diagnosis" 並開出處方。
 
             【望診分析】：
             - **舌象**：觀察舌苔(寒熱)、舌質(虛實)、齒痕(濕)。
-            - **面相 (新增)**：
+            - **面相**：
               - 面色青(肝/痛/寒)、赤(心/熱)、黃(脾/濕)、白(肺/虛/寒)、黑(腎/痛/水)。
               - 眼神：有神(病輕)、無神(病重)。
               - 氣色：光澤(吉)、晦暗(凶)。
 
             【劑量法則】：
-            - 必須參考病患的**身高體重**來決定劑量。
-            - 體格壯實/體重過重者：麻黃、桂枝、附子、石膏等主藥劑量需加重。
+            - 必須參考病患的**身高體重**來決定劑量，並註明單位換算（1錢≈3.75克）。
+            - 體格壯實/體重過重者：麻黃、桂枝、石膏等主藥劑量可加重；炮附子加重仍須遵守先煎規範。
+            - 初服者一律從保守劑量起手，註明「先服三帖觀察」。
 
             【輸出 JSON 格式 (嚴禁 Markdown)】：
             - **若是階段一 (追問)**：
@@ -700,17 +780,23 @@
                   "type": "inquiry",
                   "ni_chat_reply": "【倪師望診初步分析】\n(請簡述對舌象/面相的觀察，例如：面色偏青，舌苔白膩...)\n\n【進一步追問】\n(請列出 3-5 個關鍵問題來確認病機，語氣要像倪師親自問診，例如：'這很重要，你早上起來嘴巴苦不苦？')"
               }
-            
+
             - **若是階段二 (確診)**：
               {
                   "type": "diagnosis",
-                  "diagnosis_data": { 
-                      "stage": "六經", 
+                  "diagnosis_data": {
+                      "stage": "六經",
                       "bagang": "八綱",
                       "pathology": "病機",
+                      "confidence": "高/中/低 + 一句理由",
+                      "classic_reference": "支持此診斷的《傷寒論》/《金匱》條文原文",
+                      "differential": [ {"formula":"曾考慮的方","excluded_reason":"排除理由"} ],
                       "bone_formula": "經方主方名",
-                      "bone_herbs": [ {"name":"藥名","dose":"劑量(錢/兩)"} ],
+                      "bone_herbs": [ {"name":"藥名","dose":"劑量(錢) 與 約克數"} ],
                       "modifications": [ {"name":"藥名","dose":"劑量","action":"加/減","reason":"理由"} ],
+                      "decoction": "煎服法：水量、先煎後下（附子先煎45-60分鐘等）、服法（一日幾服/飯前後/啜粥溫覆）、中病即止原則",
+                      "warnings": "禁忌與停藥警訊：何種反應須立即停藥就醫；特殊人群注意事項；與西藥間隔",
+                      "followup": "預期見效時間與回診指標：幾帖內應見何改善，若無改善或惡化該怎麼辦",
                       "reason": "方義解析",
                       "ni_comment": "倪師點評 (包含生活建議)"
                   },
@@ -763,9 +849,16 @@
                         throw new Error(json.error.message);
                     }
                     
-                    let raw = json.candidates[0].content.parts[0].text;
+                    let raw = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (!raw) throw new Error("AI 回應為空（可能被安全過濾或後端異常），請重試或換個描述方式。");
                     raw = raw.replace(/```json/g, '').replace(/```/g, '').trim();
-                    const result = JSON.parse(raw);
+                    let result = null;
+                    try { result = JSON.parse(raw); }
+                    catch (_) {
+                        const m = raw.match(/\{[\s\S]*\}/);
+                        if (m) { try { result = JSON.parse(m[0]); } catch (__) {} }
+                    }
+                    if (!result || !result.type) { result = { type: 'inquiry', ni_chat_reply: raw }; } // 解析失敗時以純文字呈現，絕不丟失醫囑內容
                     handleAIResponse(result);
 
                 } catch (fetchError) {
@@ -811,8 +904,11 @@
                 if (res.ni_chat_reply && res.ni_chat_reply.trim() !== "") {
                     appendChatBubble('ni', res.ni_chat_reply);
                 }
-                
+
                 saveRecord(res.diagnosis_data);
+            } else {
+                // 未知型別：以純文字呈現，不讓內容消失
+                appendChatBubble('ni', res.ni_chat_reply || (typeof res === 'string' ? res : JSON.stringify(res)));
             }
         }
 
@@ -840,30 +936,63 @@
 
         function handleEnter(e) { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }
 
-        function sendChatMessage() {
+        async function sendChatMessage() {
             const input = document.getElementById('chat-input');
+            const btn = document.getElementById('send-btn');
+            if (btn.disabled) return; // 防連點造成並發呼叫、對話錯序
             const text = input.value.trim();
             if(!text) return;
             appendChatBubble('user', text);
             input.value = '';
             showLoadingBubble();
-            callAI("", false); 
+            btn.disabled = true; btn.classList.add('opacity-50');
+            try { await callAI("", false); }
+            finally { btn.disabled = false; btn.classList.remove('opacity-50'); }
         }
 
         function updateChatStatus(status) { document.getElementById('chat-status').innerText = status; }
 
         function renderDiagnosis(data) {
-            document.getElementById('diagnosis-stage').innerText = data.stage;
-            document.getElementById('pathology').innerText = data.pathology;
-            document.getElementById('bagang-details').innerText = data.bagang;
-            document.getElementById('rx-name').innerText = data.bone_formula;
-            document.getElementById('herb-bone-list').innerHTML = data.bone_herbs.map(h => `<div class="flex justify-between border-b border-gray-100 pb-1"><span class="font-bold text-[#78350f]">${h.name}</span><span class="font-mono text-gray-600">${h.dose}</span></div>`).join('');
-            if(data.modifications && data.modifications.length > 0) {
-                 const modHTML = data.modifications.map(m => `<div class="flex justify-between border-b border-dashed border-gray-200 pb-1 ${m.action==='加'?'text-green-700':'text-red-700'}"><span class="font-bold text-xs"><i class="fa-solid ${m.action==='加'?'fa-plus':'fa-minus'}"></i> ${m.name}</span><span class="font-mono text-xs">${m.dose}</span></div>`).join('');
+            data = data || {};
+            document.getElementById('diagnosis-stage').innerText = data.stage || '--';
+            document.getElementById('pathology').innerText = data.pathology || '--';
+            document.getElementById('bagang-details').innerText = data.bagang || '--';
+            document.getElementById('rx-name').innerText = data.bone_formula || '--';
+            const herbs = Array.isArray(data.bone_herbs) ? data.bone_herbs : [];
+            document.getElementById('herb-bone-list').innerHTML = herbs.map(h => `<div class="flex justify-between border-b border-gray-100 pb-1"><span class="font-bold text-[#78350f]">${h.name||''}</span><span class="font-mono text-gray-600">${h.dose||''}</span></div>`).join('');
+            if(Array.isArray(data.modifications) && data.modifications.length > 0) {
+                 const modHTML = data.modifications.map(m => `<div class="flex justify-between border-b border-dashed border-gray-200 pb-1 ${m.action==='加'?'text-green-700':'text-red-700'}"><span class="font-bold text-xs"><i class="fa-solid ${m.action==='加'?'fa-plus':'fa-minus'}"></i> ${m.name||''}</span><span class="font-mono text-xs">${m.dose||''}</span></div>`).join('');
                 document.getElementById('herb-bone-list').innerHTML += modHTML;
             }
-            document.getElementById('rx-reason').innerText = data.reason;
-            document.getElementById('ni-comment').innerText = data.ni_comment;
+            document.getElementById('rx-reason').innerText = data.reason || '';
+            document.getElementById('ni-comment').innerText = data.ni_comment || '';
+
+            // 信心度徽章（高綠／中黃／低紅——低信心是重要的安全訊號，要醒目）
+            const conf = document.getElementById('rx-confidence');
+            if (data.confidence) {
+                const c = String(data.confidence);
+                const tone = c.startsWith('高') ? 'bg-green-50 border-green-400 text-green-800'
+                    : c.startsWith('低') ? 'bg-red-50 border-red-400 text-red-800'
+                    : 'bg-yellow-50 border-yellow-400 text-yellow-800';
+                conf.className = `text-[10px] px-2 py-0.5 rounded-full border font-bold ${tone}`;
+                conf.innerText = '信心度：' + c;
+                conf.classList.remove('hidden');
+            } else { conf.classList.add('hidden'); }
+
+            // 選填欄位：有值才顯示
+            const optionalFill = (boxId, spanId, val) => {
+                const box = document.getElementById(boxId);
+                if (val && String(val).trim()) { document.getElementById(spanId).innerText = val; box.classList.remove('hidden'); }
+                else { box.classList.add('hidden'); }
+            };
+            optionalFill('rx-decoction-box', 'rx-decoction', data.decoction);
+            optionalFill('rx-warnings-box', 'rx-warnings', data.warnings);
+            optionalFill('rx-classic-box', 'rx-classic', data.classic_reference);
+            optionalFill('rx-followup-box', 'rx-followup', data.followup);
+            const diffText = Array.isArray(data.differential)
+                ? data.differential.map(d => `${d.formula||''}（排除：${d.excluded_reason||''}）`).join('；')
+                : (data.differential || '');
+            optionalFill('rx-diff-box', 'rx-diff', diffText);
         }
 
         function showToast(msg) {
@@ -989,18 +1118,19 @@
             
             if(d.fullResult) renderDiagnosis(d.fullResult);
             
-            if (d.images) {
-                imgData = d.images;
-                for(let type in d.images) {
-                    if(d.images[type]) {
-                        setPreview(type, `data:image/jpeg;base64,${d.images[type]}`);
-                    } else {
-                         document.getElementById(`${type}-preview`).classList.add('hidden'); 
-                         document.getElementById(`${type}-placeholder`).classList.remove('hidden'); 
-                         document.getElementById(`${type}-clear`).classList.add('hidden');
-                    }
+            // 重置全部六種影像欄位，避免殘留上一筆病歷的圖片
+            const ALL_IMG_TYPES = ['tongue','face','sleep','hr','hrv','spo2'];
+            imgData = Object.assign({tongue:null,face:null,sleep:null,hr:null,hrv:null,spo2:null}, d.images || {});
+            ALL_IMG_TYPES.forEach(type => {
+                if (imgData[type]) {
+                    setPreview(type, `data:image/jpeg;base64,${imgData[type]}`);
+                } else {
+                    document.getElementById(`${type}-preview`).classList.add('hidden');
+                    document.getElementById(`${type}-placeholder`).classList.remove('hidden');
+                    document.getElementById(`${type}-clear`).classList.add('hidden');
+                    document.getElementById(`${type}-image`).value = '';
                 }
-            }
+            });
 
             document.getElementById('user-note').value = d.userNote || "";
 
