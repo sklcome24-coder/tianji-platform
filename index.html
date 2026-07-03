@@ -1,6 +1,35 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+<script>
+/* 知識庫連線自動切換：本機 RAG 優先，連不上改走雲端隧道（讀 backend.json） */
+(function(){
+  var LOCAL = 'http://127.0.0.1:8765';
+  var _fetch = window.fetch.bind(window);
+  var base = LOCAL;
+  var ready = new Promise(function(done){
+    var ac = ('AbortController' in window) ? new AbortController() : null;
+    var t = setTimeout(function(){ if(ac) ac.abort(); }, 1500);
+    _fetch(LOCAL + '/health', ac ? {signal: ac.signal} : {})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ clearTimeout(t); if(d && d.ok){ done(); } else { throw 0; } })
+      .catch(function(){
+        clearTimeout(t);
+        _fetch('backend.json?t=' + Date.now())
+          .then(function(r){ return r.json(); })
+          .then(function(j){ if(j && j.api) base = j.api; done(); })
+          .catch(function(){ done(); });
+      });
+  });
+  window.fetch = function(u, o){
+    if (typeof u === 'string' && u.indexOf(LOCAL) === 0){
+      return ready.then(function(){ return _fetch(base + u.slice(LOCAL.length), o); });
+    }
+    return _fetch(u, o);
+  };
+  window.__NI_BACKEND_READY__ = ready.then(function(){ return base; });
+})();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>天紀・倪海廈 中醫命理 免費分享平台</title>
@@ -32,7 +61,7 @@
 <main class="flex-1 max-w-4xl mx-auto w-full p-6">
   <p class="text-center text-stone-500 text-sm mb-8 leading-relaxed">
     兩套系統的排盤、卦象、辨證功能皆可直接使用。<br class="hidden md:block">
-    AI 小助理問答功能需連接本機「倪海廈知識庫」，僅在本機環境提供。
+    AI 小助理連接「倪海廈知識庫」（傷寒、金匱、本草、內經、醫案、天紀紫微、易卦、風水），知識庫上線時各地皆可使用。
   </p>
 
   <div class="grid md:grid-cols-2 gap-6">
@@ -70,16 +99,19 @@
 </footer>
 
 <script>
-  // 嘗試連接本機 RAG 後端；連得上才顯示狀態列（雲端訪客不會看到錯誤訊息）
+  // 檢查知識庫連線（連線自動切換：本機優先，其次雲端隧道）
+  const bar = document.getElementById("statusbar");
+  const s = document.getElementById("status");
   fetch("http://127.0.0.1:8765/health").then(r=>r.json()).then(d=>{
-    if(d && d.ok){
-      const bar = document.getElementById("statusbar");
-      const s = document.getElementById("status");
-      bar.style.display = "";
-      s.innerHTML = '<span class="dot" style="background:#16a34a"></span>知識庫服務運作中（模型：'+(d.model||'—')+'）';
-      s.className = "text-[12px] text-green-700";
-    }
-  }).catch(()=>{ /* 雲端環境連不到本機知識庫，屬正常情況，不顯示錯誤 */ });
+    if(!(d && d.ok)) throw new Error("bad");
+    bar.style.display = "";
+    s.innerHTML = '<span class="dot" style="background:#16a34a"></span>倪海廈知識庫運作中，AI 小助理可用（模型：'+(d.model||'—')+'）';
+    s.className = "text-[12px] text-green-700";
+  }).catch(()=>{
+    bar.style.display = "";
+    s.innerHTML = '<span class="dot" style="background:#d97706"></span>AI 知識庫目前離線（主機未開機），排盤與辨證功能不受影響';
+    s.className = "text-[12px] text-amber-700";
+  });
 </script>
 </body>
 </html>

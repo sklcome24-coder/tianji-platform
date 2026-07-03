@@ -1,6 +1,35 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
+<script>
+/* 知識庫連線自動切換：本機 RAG 優先，連不上改走雲端隧道（讀 backend.json） */
+(function(){
+  var LOCAL = 'http://127.0.0.1:8765';
+  var _fetch = window.fetch.bind(window);
+  var base = LOCAL;
+  var ready = new Promise(function(done){
+    var ac = ('AbortController' in window) ? new AbortController() : null;
+    var t = setTimeout(function(){ if(ac) ac.abort(); }, 1500);
+    _fetch(LOCAL + '/health', ac ? {signal: ac.signal} : {})
+      .then(function(r){ return r.json(); })
+      .then(function(d){ clearTimeout(t); if(d && d.ok){ done(); } else { throw 0; } })
+      .catch(function(){
+        clearTimeout(t);
+        _fetch('backend.json?t=' + Date.now())
+          .then(function(r){ return r.json(); })
+          .then(function(j){ if(j && j.api) base = j.api; done(); })
+          .catch(function(){ done(); });
+      });
+  });
+  window.fetch = function(u, o){
+    if (typeof u === 'string' && u.indexOf(LOCAL) === 0){
+      return ready.then(function(){ return _fetch(base + u.slice(LOCAL.length), o); });
+    }
+    return _fetch(u, o);
+  };
+  window.__NI_BACKEND_READY__ = ready.then(function(){ return base; });
+})();
+</script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-欸scale=1.0, user-scalable=no">
     <title>倪海廈經方系統 (v64 深度辨證版)</title>
