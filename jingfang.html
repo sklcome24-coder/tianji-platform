@@ -533,16 +533,31 @@
                 document.getElementById('custom-api-key').disabled = true;
             } else {
                 const savedKey = localStorage.getItem('gemini_api_key');
-                if(savedKey) { 
-                    userApiKey = savedKey; 
-                    document.getElementById('custom-api-key').value = savedKey; 
-                    updateApiStatus(true); 
-                } else { 
-                    const apiKey = ""; 
-                    if(apiKey) { userApiKey = apiKey; updateApiStatus(true); } 
+                if(savedKey) {
+                    userApiKey = savedKey;
+                    document.getElementById('custom-api-key').value = savedKey;
+                    updateApiStatus(true);
+                } else {
+                    const apiKey = "";
+                    if(apiKey) { userApiKey = apiKey; updateApiStatus(true); }
                     else { updateApiStatus(false); }
                 }
             }
+
+            // 倪師知識庫連線偵測（與 API Key 無關；經切換器打到本機 RAG 或雲端隧道）
+            (async () => {
+                try {
+                    const r = await fetch('http://127.0.0.1:8765/health');
+                    const d = await r.json();
+                    if (d && d.ok) {
+                        const base = window.__NI_BACKEND_READY__ ? await window.__NI_BACKEND_READY__ : '';
+                        const isLocal = String(base).indexOf('127.0.0.1') >= 0;
+                        const badge = document.getElementById('api-status-display');
+                        badge.innerHTML = `<i class="fa-solid fa-book-open"></i> 倪師知識庫已連線 (${isLocal ? '本機' : '雲端'})`;
+                        badge.classList.remove('inactive'); badge.classList.add('active');
+                    }
+                } catch (_) { /* 知識庫離線時維持原本的金鑰狀態顯示 */ }
+            })();
         });
 
         function updateApiStatus(connected) {
@@ -668,10 +683,8 @@
             
             let activeKey = userApiKey;
             if(FIXED_API_KEY && FIXED_API_KEY.length > 10) { activeKey = FIXED_API_KEY; }
+            // 雲端版：未填金鑰不擋操作，由後端 RAG 的備援金鑰處理
 
-            const envKey = ""; 
-            if(!activeKey && !envKey) { document.getElementById('api-modal').classList.remove('hidden'); return; }
-            
             msg.classList.add('hidden');
             btn.disabled = true;
             btn.innerHTML = '<span class="loader"></span> 處理影像與資料中...';
@@ -844,11 +857,12 @@
                     clearTimeout(timeoutId);
 
                     const json = await res.json();
-                    
+
                     if (json.error) {
                         throw new Error(json.error.message);
                     }
-                    
+                    const ragSources = Array.isArray(json.rag_sources) ? json.rag_sources : [];
+
                     let raw = json?.candidates?.[0]?.content?.parts?.[0]?.text;
                     if (!raw) throw new Error("AI 回應為空（可能被安全過濾或後端異常），請重試或換個描述方式。");
                     raw = raw.replace(/```json/g, '').replace(/```/g, '').trim();
@@ -860,6 +874,7 @@
                     }
                     if (!result || !result.type) { result = { type: 'inquiry', ni_chat_reply: raw }; } // 解析失敗時以純文字呈現，絕不丟失醫囑內容
                     handleAIResponse(result);
+                    if (ragSources.length) appendRagFooter(ragSources);
 
                 } catch (fetchError) {
                     clearTimeout(timeoutId);
@@ -922,6 +937,19 @@
             box.scrollTop = box.scrollHeight;
             if(role !== 'loading') { chatHistory.push({ role, text }); }
             return bubble;
+        }
+
+        // 在最後一則倪師訊息下方標註本次檢索到的知識庫原文來源
+        function appendRagFooter(sources) {
+            const box = document.getElementById('chat-box');
+            const bubbles = box.querySelectorAll('.chat-ni');
+            const last = bubbles[bubbles.length - 1];
+            if (!last) return;
+            const div = document.createElement('div');
+            div.className = 'mt-2 pt-1 border-t border-stone-600 text-[10px] text-amber-400 leading-relaxed';
+            div.innerHTML = '📚 本次已檢索倪師知識庫：' + sources.map(s => `《${s}》`).join('、');
+            last.appendChild(div);
+            box.scrollTop = box.scrollHeight;
         }
 
         function showLoadingBubble() {
