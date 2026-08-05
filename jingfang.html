@@ -32,7 +32,7 @@
 </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>倪海廈經方系統 (v65 安全辨證版)</title>
+    <title>倪海廈經方系統 (v66 守方穩定版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
@@ -130,7 +130,7 @@
                     倪海廈數位系統
                 </h1>
                 <p class="text-xs text-[#a8a29e] mt-1 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-green-500"></span> 安全辨證版 (v65)
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span> 守方穩定版 (v66)
                 </p>
             </div>
             <div class="flex items-center gap-3">
@@ -332,9 +332,23 @@
                         </div>
 
                         <div class="rx-paper rounded shadow-sm p-4 !py-4">
+                            <!-- 處方調整說明：唯有確有新證據改方時才出現，必須交代改了什麼、為什麼 -->
+                            <div id="rx-revision-box" class="hidden mb-3 border-2 border-orange-400 bg-orange-50 rounded p-3">
+                                <div class="font-bold text-orange-800 text-sm mb-1"><i class="fa-solid fa-triangle-exclamation"></i> 處方已調整 — 請看清楚變更原因</div>
+                                <div class="text-xs text-orange-900 leading-relaxed space-y-1">
+                                    <div><span class="font-bold">【新出現的證據】</span> <span id="rx-rev-evidence"></span></div>
+                                    <div><span class="font-bold">【調整內容】</span> <span id="rx-rev-changes"></span></div>
+                                    <div><span class="font-bold">【為何非改不可】</span> <span id="rx-rev-why"></span></div>
+                                </div>
+                                <div class="text-[10px] text-orange-700 mt-2 pt-1 border-t border-orange-200">※ 以最新版處方為準。舊處方若已抓藥，請攜此說明諮詢中醫師後再決定是否更換。</div>
+                            </div>
+
                             <div class="mb-2 border-b border-dashed border-[#d6d3d1] pb-2 flex justify-between items-baseline">
                                 <h3 class="text-[#78350f] font-bold text-lg"><i class="fa-solid fa-mortar-pestle"></i> <span id="rx-name">--</span></h3>
-                                <span id="rx-confidence" class="hidden text-[10px] px-2 py-0.5 rounded-full border font-bold"></span>
+                                <div class="flex items-center gap-1">
+                                    <span id="rx-version" class="hidden text-[10px] px-2 py-0.5 rounded-full border border-stone-300 bg-stone-50 text-stone-600 font-bold"></span>
+                                    <span id="rx-confidence" class="hidden text-[10px] px-2 py-0.5 rounded-full border font-bold"></span>
+                                </div>
                             </div>
                             <div id="herb-bone-list" class="grid grid-cols-3 sm:grid-cols-4 gap-x-2 gap-y-1 text-sm mb-3"></div>
 
@@ -347,6 +361,12 @@
 
                             <div class="text-xs text-[#44403c] leading-relaxed font-serif text-justify bg-[#fafaf9] p-2 rounded border border-[#f5f5f4]">
                                 <span class="font-bold text-[#78350f]">【方義】</span> <span id="rx-reason"></span>
+                            </div>
+
+                            <!-- 內經藥行機轉：藥力在身體內如何運行 -->
+                            <div id="rx-neijing-box" class="hidden mt-2 text-xs leading-relaxed bg-indigo-50 border border-indigo-200 text-indigo-900 p-2 rounded text-justify font-serif">
+                                <div class="font-bold text-indigo-800 mb-1"><i class="fa-solid fa-route"></i> 【內經藥行機轉】藥力在體內如何走</div>
+                                <div id="rx-neijing"></div>
                             </div>
                              <div class="mt-2 pt-2 border-t border-dashed border-gray-300 text-xs text-[#44403c] italic">
                                 <span class="font-bold text-amber-700">【倪師點評】</span> <span id="ni-comment"></span>
@@ -440,8 +460,11 @@
         let userApiKey = "";
         let imgData = { tongue: null, face: null, sleep: null, hr: null, hrv: null, spo2: null };
         let chatHistory = [];
-        let currentRecordId = null; 
+        let currentRecordId = null;
         let initialContext = "";
+        let vitalsAnchor = "";      // 病患體格基準（年齡/身高/體重），每輪重述以固定劑量
+        let currentRx = null;       // 已開立處方的鎖定快照：追問時原樣沿用，非有新證據不得更動
+        let rxVersion = 0;          // 處方版次：每次確有理由的調整才 +1
 
         const questionsBase = [
             { id: 'q1', text: '一、睡眠 (Sleep)', options: ['一覺到天亮', '入睡困難 (心)', '半夜醒 (肝/肺)', '嗜睡 (少陰)'] },
@@ -718,8 +741,12 @@
             const redText = redHits.length ? `🚨【急症紅旗】病患描述含「${redHits.join('、')}」——回覆第一段必須先評估是否需立即就醫/叫救護車，再進行辨證。` : '';
 
             initialContext = `病患：${gender}, ${age}歲, 身高${height}cm, 體重${weight}kg。\n${spText}\n${redText}\n主訴：${complaint}。問診資料：\n${qData}`;
+            // 體格基準單獨保存並每輪重述，避免長對話中被稀釋而導致劑量浮動
+            vitalsAnchor = `${gender}／${age}歲／身高${height}cm／體重${weight}kg（此為劑量計算依據，全程不變）`;
 
             chatHistory = [];
+            currentRx = null;   // 新病患：清空上一位的處方鎖
+            rxVersion = 0;
             currentRecordId = Date.now().toString();
             document.getElementById('chat-box').innerHTML = '';
             document.getElementById('result-card-container').classList.add('hidden'); // 初始不顯示處方，因為要先問診
@@ -773,7 +800,25 @@
                 - 只有當病患回答了上述追問後，才進行確診。
                 - **辨證次第**：主證定六經 → 兼證定加減 → 引《傷寒論》/《金匱》條文佐證 → 至少列出1-2個曾考慮但排除的方劑與排除理由（鑑別診斷）。
                 - **信心度**：高（脈證相符條文吻合）／中（大體吻合但缺脈診或部分資訊）／低（資訊不足，此時應說明還缺什麼，並建議面診）。
-                - 輸出 type: "diagnosis" 並開出處方。
+                - 輸出 type: "diagnosis" 並開出處方。**一個病程只開這一次方**，之後除非符合下列改方要件，否則一律沿用。
+
+            3.  **階段三：處方已開立後的對話 (Post-Prescription Phase)**
+                - 若上下文出現【現行處方】區塊，代表**方已經開了**。此時你的預設行為是「守方」，不是重開。
+                - 病患來問「這藥怎麼吃／要吃多久／能不能配某某食物／某症狀正不正常」等 → 輸出 type: "answer"，**完全不動處方**，只回答問題。
+                - 唯有符合【改方要件】才可調整 → 輸出 type: "revision"，並強制交代原因。
+
+            【處方穩定性鐵律 (Prescription Stability — 最高優先)】：
+            S-1. **守方為default**：方一旦開出，就是病患要去抓的藥。反覆變動會讓病患無所適從、不敢服藥，這是嚴重的臨床錯誤。**沒有新證據就不准改方，一味藥、一分劑量都不准動。**
+            S-2. **原樣複製**：沿用處方時（type: "answer"），若需引用方藥，必須與【現行處方】**逐字逐劑量完全相同**，嚴禁「順手」微調劑量、換藥名寫法、增減藥味。
+            S-3. **改方要件（必須至少符合一項，否則不得改方）**：
+                 (a) 病患回報**新症狀或新病史**，且該證據足以改變六經歸屬或病機判斷；
+                 (b) 病患回報**服藥後的反應**（有效程度、不良反應、症狀轉變），依「觀其脈證，知犯何逆，隨證治之」需調整；
+                 (c) 出現**安全問題**（過敏、懷孕、西藥交互、慢性病惡化、十八反十九畏牴觸）；
+                 (d) 病患提供**先前缺漏的關鍵資料**（如脈象、體重更正、既往病史）。
+                 — 病患只是換句話重述舊症狀、只是提問、或你自己「想到更好的方」，**都不構成改方要件**。
+            S-4. **劑量錨定**：劑量依【體格基準】的年齡/身高/體重計算，此基準全程不變，因此**劑量也不得無故變動**。若改劑量，必須在 change_reason 明講是依據哪一條新證據。
+            S-5. **改方必說明**：type: "revision" 時，change_reason 三個欄位（新證據／調整內容／為何非改不可）全部必填，且「調整內容」必須寫成「某藥 由X錢 → 改為Y錢」或「加入某藥Z錢」「移除某藥」的明確對照，不可含糊帶過。
+            S-6. **不確定就守方**：若你猶豫要不要改，代表證據不足 → 不要改，改成追問病患來取得證據（type: "answer" 併附追問）。
 
             【望診分析】：
             - **舌象**：觀察舌苔(寒熱)、舌質(虛實)、齒痕(濕)。
@@ -786,6 +831,17 @@
             - 必須參考病患的**身高體重**來決定劑量，並註明單位換算（1錢≈3.75克）。
             - 體格壯實/體重過重者：麻黃、桂枝、石膏等主藥劑量可加重；炮附子加重仍須遵守先煎規範。
             - 初服者一律從保守劑量起手，註明「先服三帖觀察」。
+            - 劑量一經開立即**錨定**，除非符合改方要件，否則後續對話一律沿用相同數字。
+
+            【內經藥行機轉 (Neijing Pharmacodynamics) — 必填】：
+            開方時必須依《黃帝內經》理論，說明「這帖藥吃下去，藥力在身體裡怎麼走、怎麼把病趕出去」。內容須涵蓋：
+            N-1. **四氣五味與升降浮沉**：主藥的氣味屬性如何決定藥力走向——
+                 「辛甘發散為陽，酸苦涌泄為陰」（《素問·陰陽應象大論》）；辛溫升散走表、苦寒沉降走下、甘緩守中、酸收斂、鹹軟堅下行。
+            N-2. **歸經與臟腑走向**：藥入何經、何臟腑，循何經脈路徑到達病所（如桂枝入太陽走肌表、附子走少陰溫腎陽、柴胡入少陽轉樞半表半裡）。
+            N-3. **邪之出路**：明確講出病邪從哪條路被趕出去——發汗解表（從汗而出）、湧吐（從上而出）、攻下（從大便出）、利小便（從小便出）、和解（樞轉外達）。這是倪師最重視的「給邪一條出路」。
+            N-4. **氣血營衛與臟腑生剋**：藥力如何調營衛之和、補氣血之虛，以及依五行生剋（虛則補其母、實則瀉其子）如何調整臟腑失衡。
+            N-5. **正邪消長與服藥後的身體反應**：預期身體會出現什麼「藥在做工」的反應（如微汗出、腹中雷鳴、小便增多、睏倦欲眠），並與「不良反應」清楚區分，讓病患心裡有底不驚慌。
+            —— 用倪師的口吻講白話，讓沒學過中醫的人也聽得懂身體裡正在發生什麼事，但術語與經文依據要正確。
 
             【輸出 JSON 格式 (嚴禁 Markdown)】：
             - **若是階段一 (追問)**：
@@ -811,13 +867,55 @@
                       "warnings": "禁忌與停藥警訊：何種反應須立即停藥就醫；特殊人群注意事項；與西藥間隔",
                       "followup": "預期見效時間與回診指標：幾帖內應見何改善，若無改善或惡化該怎麼辦",
                       "reason": "方義解析",
+                      "neijing_mechanism": "【必填】依《黃帝內經》說明藥力在體內的運行：四氣五味升降浮沉 → 歸何經走何臟腑 → 邪從何路而出 → 營衛氣血臟腑生剋如何調 → 服後身體會有什麼「藥在做工」的正常反應",
                       "ni_comment": "倪師點評 (包含生活建議)"
                   },
                   "ni_chat_reply": "根據你的回答，這已經很明顯了，這是... (解釋為何確診此方)"
               }
+
+            - **若是階段三·守方回答 (處方不變，只回答問題)**：
+              {
+                  "type": "answer",
+                  "ni_chat_reply": "(直接回答病患的疑問。若需要更多資訊才能判斷，就在這裡追問。**絕對不要重開處方，也不要在文字中改寫任何藥味或劑量**。若病患問到方藥內容，引用【現行處方】原文數字。)"
+              }
+
+            - **若是階段三·確有理由改方**：
+              {
+                  "type": "revision",
+                  "diagnosis_data": { (欄位與階段二完全相同，填入調整後的完整新處方，neijing_mechanism 一樣必填) },
+                  "change_reason": {
+                      "new_evidence": "病患這次提供的哪一項新證據觸發改方（引述病患原話）",
+                      "changes": "逐項對照：例如「桂枝 由3錢 → 改為2錢」「加入茯苓4錢」「移除麻黃」；若主方更換要寫「由桂枝湯 → 改為小柴胡湯」",
+                      "why": "為何這個新證據使得原方不再適合、新方為何對證（引條文或病機），以及對病患的實際影響"
+                  },
+                  "ni_chat_reply": "(用倪師口吻向病患說明：你剛講的這一點很重要，所以方子要調一下... 讓病患明白為何前後不同，安心換方)"
+              }
             `;
 
-            const fullPrompt = `${systemPrompt}\n\n【原始資料】\n${initialContext}\n\n【對話紀錄】\n${historyText}\n\n${isInitial ? '這是初診。請觀察舌象、面相與數據，並進行初步分析與「追問」(type: inquiry)。不要直接開方。' : '病患已回答，請根據他的回答進行確診 (type: diagnosis)。'}`;
+            // 【處方鎖】方一旦開出就原樣帶進每一輪對話，AI 才不會因為看不見自己開過什麼而重開一份
+            let rxBlock = "";
+            if (currentRx) {
+                const herbLines = (currentRx.bone_herbs || []).map(h => `  ${h.name} ${h.dose}`).join('\n');
+                const modLines = (currentRx.modifications || []).map(m => `  ${m.action}${m.name} ${m.dose}`).join('\n');
+                rxBlock = `\n\n【現行處方 — 第 ${rxVersion} 版（已開立，病患可能已據此抓藥）】\n`
+                    + `主方：${currentRx.bone_formula || '--'}\n`
+                    + `六經：${currentRx.stage || '--'}／病機：${currentRx.pathology || '--'}\n`
+                    + `藥味與劑量：\n${herbLines || '  (無)'}\n`
+                    + (modLines ? `加減：\n${modLines}\n` : '')
+                    + `※ 此為已生效處方。除非符合【改方要件】(S-3)，否則**不得更動任何一味藥或任何劑量**，並以 type:"answer" 回覆病患即可。\n`
+                    + `※ 若確需改方，必須輸出 type:"revision" 並完整填寫 change_reason。`;
+            }
+
+            const stageHint = isInitial
+                ? '這是初診。請觀察舌象、面相與數據，並進行初步分析與「追問」(type: inquiry)。不要直接開方。'
+                : (currentRx
+                    ? '處方已開立（見【現行處方】）。請先判斷病患這次的發言是否符合【改方要件】(S-3)：\n'
+                      + '  · 不符合（只是提問、閒聊、重述舊症狀）→ 輸出 type:"answer"，處方一字不動，只回答他的問題。\n'
+                      + '  · 符合（新症狀／服藥反應／安全問題／補上關鍵資料）→ 輸出 type:"revision"，附完整 change_reason 說明改了什麼、為什麼。\n'
+                      + '  · 猶豫不決 → 一律守方，用 type:"answer" 追問取得更多證據。'
+                    : '病患已回答追問。若證據已足夠確診，輸出 type:"diagnosis" 開方（neijing_mechanism 必填）；若仍不足以定六經，繼續 type:"inquiry" 追問，不要勉強開方。');
+
+            const fullPrompt = `${systemPrompt}\n\n【體格基準（全程固定，劑量以此計算）】\n${vitalsAnchor}\n\n【原始資料】\n${initialContext}${rxBlock}\n\n【對話紀錄】\n${historyText}\n\n${stageHint}`;
 
             try {
                 let keyToUse = (FIXED_API_KEY && FIXED_API_KEY.length > 10) ? FIXED_API_KEY : userApiKey;
@@ -830,12 +928,12 @@
 
                 // 雲端版：未填金鑰時 key 留空，由後端 RAG 伺服器的備援金鑰處理
 
+                // 望診影像每一輪都重送：舌象面相是當初定方的依據，追問時若不附上，
+                // AI 會失去望診證據而改用別的方向推理，處方因此漂移。
                 const parts = [{ text: fullPrompt }];
-                if(isInitial) {
-                    for(let k in imgData) { 
-                        if(imgData[k]) {
-                            parts.push({ inlineData: { mimeType: "image/jpeg", data: imgData[k] } }); 
-                        } 
+                for(let k in imgData) {
+                    if(imgData[k]) {
+                        parts.push({ inlineData: { mimeType: "image/jpeg", data: imgData[k] } });
                     }
                 }
 
@@ -912,15 +1010,64 @@
                 // 可以自動聚焦輸入框
                 document.getElementById('chat-input').focus();
             } else if (res.type === 'diagnosis') {
-                // 階段二：顯示處方
-                renderDiagnosis(res.diagnosis_data);
+                if (!currentRx) {
+                    // 階段二：首次確診開方 → 鎖定處方
+                    currentRx = res.diagnosis_data;
+                    rxVersion = 1;
+                    renderDiagnosis(res.diagnosis_data, null);
+                } else {
+                    // 已有處方卻又送來一份 diagnosis：AI 未依規定走 revision 流程。
+                    // 自行比對差異，相同則守方不動；不同則強制標示，絕不讓處方悄悄變掉。
+                    const changes = diffRx(currentRx, res.diagnosis_data);
+                    if (changes.length === 0) {
+                        renderDiagnosis(currentRx, null);   // 內容一致：維持原版次
+                    } else {
+                        currentRx = res.diagnosis_data;
+                        rxVersion = rxVersion + 1;
+                        renderDiagnosis(res.diagnosis_data, {
+                            new_evidence: '（系統提示：AI 未依規定說明改方理由，以下為系統自動比對的結果）',
+                            changes: changes.join('；'),
+                            why: '本次變動未附理由，請勿逕自更換藥方——請在對話中直接追問「為什麼要改方」，或以前一版處方諮詢中醫師後再決定。'
+                        });
+                        appendChatBubble('ni', '⚠️ 系統提示：本次回覆更動了處方但未說明理由，已為您標示變更內容。請追問改方原因後再決定是否採用。');
+                    }
+                }
                 document.getElementById('result-card-container').classList.remove('hidden');
-                
+
                 if (res.ni_chat_reply && res.ni_chat_reply.trim() !== "") {
                     appendChatBubble('ni', res.ni_chat_reply);
                 }
 
-                saveRecord(res.diagnosis_data);
+                saveRecord(currentRx);
+            } else if (res.type === 'revision') {
+                // 階段三：確有理由改方 → 更新處方鎖，並醒目呈現變更原因
+                if (res.diagnosis_data) {
+                    const autoDiff = diffRx(currentRx, res.diagnosis_data);
+                    const cr = res.change_reason || {};
+                    // AI 沒寫「調整內容」時，用系統比對結果補上，確保病患一定看得到改了什麼
+                    if (!cr.changes && autoDiff.length) cr.changes = autoDiff.join('；');
+                    if (!cr.new_evidence) cr.new_evidence = '（AI 未明確指出，請於對話中追問）';
+                    if (!cr.why) cr.why = '（AI 未說明原因，請於對話中追問後再決定是否更換）';
+
+                    if (autoDiff.length === 0) {
+                        // 標為改方但實際內容沒變：維持原版次，不驚擾病患
+                        renderDiagnosis(currentRx, null);
+                    } else {
+                        currentRx = res.diagnosis_data;
+                        rxVersion = rxVersion + 1;
+                        renderDiagnosis(res.diagnosis_data, cr);
+                    }
+                    document.getElementById('result-card-container').classList.remove('hidden');
+                    saveRecord(currentRx);
+                }
+                if (res.ni_chat_reply && res.ni_chat_reply.trim() !== "") {
+                    appendChatBubble('ni', res.ni_chat_reply);
+                }
+                document.getElementById('chat-input').focus();
+            } else if (res.type === 'answer') {
+                // 階段三：守方回答 —— 處方卡完全不動，只回話
+                appendChatBubble('ni', res.ni_chat_reply);
+                document.getElementById('chat-input').focus();
             } else {
                 // 未知型別：以純文字呈現，不讓內容消失
                 appendChatBubble('ni', res.ni_chat_reply || (typeof res === 'string' ? res : JSON.stringify(res)));
@@ -980,8 +1127,51 @@
 
         function updateChatStatus(status) { document.getElementById('chat-status').innerText = status; }
 
-        function renderDiagnosis(data) {
+        // --- 處方比對：用來偵測 AI 是否在沒說明理由的情況下改了方 ---
+        function rxHerbMap(rx) {
+            const map = {};
+            (rx?.bone_herbs || []).forEach(h => { if (h && h.name) map[String(h.name).trim()] = String(h.dose || '').trim(); });
+            (rx?.modifications || []).forEach(m => {
+                if (!m || !m.name) return;
+                const n = String(m.name).trim();
+                if (m.action === '減') delete map[n]; else map[n] = String(m.dose || '').trim();
+            });
+            return map;
+        }
+
+        // 回傳中文差異描述陣列；完全相同則回傳空陣列
+        function diffRx(oldRx, newRx) {
+            const out = [];
+            const oldF = String(oldRx?.bone_formula || '').trim();
+            const newF = String(newRx?.bone_formula || '').trim();
+            if (oldF !== newF) out.push(`主方：${oldF || '--'} → ${newF || '--'}`);
+            const a = rxHerbMap(oldRx), b = rxHerbMap(newRx);
+            Object.keys(a).forEach(n => {
+                if (!(n in b)) out.push(`移除 ${n}（原 ${a[n]}）`);
+                else if (a[n] !== b[n]) out.push(`${n} 由 ${a[n]} → ${b[n]}`);
+            });
+            Object.keys(b).forEach(n => { if (!(n in a)) out.push(`加入 ${n} ${b[n]}`); });
+            return out;
+        }
+
+        function renderDiagnosis(data, changeReason) {
             data = data || {};
+
+            // 處方調整說明：有 change_reason 才顯示（AI 自述），或由系統偵測到未說明的變動時補上
+            const revBox = document.getElementById('rx-revision-box');
+            if (changeReason && (changeReason.new_evidence || changeReason.changes || changeReason.why)) {
+                document.getElementById('rx-rev-evidence').innerText = changeReason.new_evidence || '（未說明）';
+                document.getElementById('rx-rev-changes').innerText = changeReason.changes || '（未說明）';
+                document.getElementById('rx-rev-why').innerText = changeReason.why || '（未說明）';
+                revBox.classList.remove('hidden');
+            } else {
+                revBox.classList.add('hidden');
+            }
+
+            // 處方版次徽章
+            const verEl = document.getElementById('rx-version');
+            if (rxVersion > 0) { verEl.innerText = `第 ${rxVersion} 版處方`; verEl.classList.remove('hidden'); }
+            else { verEl.classList.add('hidden'); }
             document.getElementById('diagnosis-stage').innerText = data.stage || '--';
             document.getElementById('pathology').innerText = data.pathology || '--';
             document.getElementById('bagang-details').innerText = data.bagang || '--';
@@ -1015,6 +1205,7 @@
             };
             optionalFill('rx-decoction-box', 'rx-decoction', data.decoction);
             optionalFill('rx-warnings-box', 'rx-warnings', data.warnings);
+            optionalFill('rx-neijing-box', 'rx-neijing', data.neijing_mechanism);
             optionalFill('rx-classic-box', 'rx-classic', data.classic_reference);
             optionalFill('rx-followup-box', 'rx-followup', data.followup);
             const diffText = Array.isArray(data.differential)
@@ -1056,6 +1247,10 @@
                 chatLog: chatHistory,
                 userNote: document.getElementById('user-note').value || "",
                 images: { ...imgData },
+                // 保存辨證脈絡，讓日後讀回病歷續談時處方與劑量基準不會遺失
+                initialContext: initialContext,
+                vitalsAnchor: vitalsAnchor,
+                rxVersion: rxVersion,
                 source: 'local'
             };
             
@@ -1143,9 +1338,15 @@
 
         window.displayHistory = (d) => {
             currentRecordId = d.id;
-            
-            if(d.fullResult) renderDiagnosis(d.fullResult);
-            
+
+            // 還原辨證脈絡：處方鎖與體格基準都要接回來，否則續談時會被當成新病患重開方
+            currentRx = d.fullResult || null;
+            rxVersion = d.rxVersion || (d.fullResult ? 1 : 0);
+            initialContext = d.initialContext || initialContext;
+            vitalsAnchor = d.vitalsAnchor || vitalsAnchor;
+
+            if(d.fullResult) renderDiagnosis(d.fullResult, null);
+
             // 重置全部六種影像欄位，避免殘留上一筆病歷的圖片
             const ALL_IMG_TYPES = ['tongue','face','sleep','hr','hrv','spo2'];
             imgData = Object.assign({tongue:null,face:null,sleep:null,hr:null,hrv:null,spo2:null}, d.images || {});
@@ -1171,6 +1372,7 @@
 
             const box = document.getElementById('chat-box');
             box.innerHTML = '';
+            chatHistory = [];   // 先清空，否則會疊加上一筆病歷的對話造成脈絡混亂
             if(d.chatLog) { d.chatLog.forEach(m => appendChatBubble(m.role, m.text)); }
             
             const drawer = document.getElementById('history-drawer');
