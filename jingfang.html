@@ -32,7 +32,7 @@
 </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>倪海廈經方系統 (v66 守方穩定版)</title>
+    <title>倪海廈經方系統 (v66.1 守方穩定版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
@@ -130,7 +130,7 @@
                     倪海廈數位系統
                 </h1>
                 <p class="text-xs text-[#a8a29e] mt-1 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-green-500"></span> 守方穩定版 (v66)
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span> 守方穩定版 (v66.1)
                 </p>
             </div>
             <div class="flex items-center gap-3">
@@ -928,12 +928,15 @@
 
                 // 雲端版：未填金鑰時 key 留空，由後端 RAG 伺服器的備援金鑰處理
 
-                // 望診影像每一輪都重送：舌象面相是當初定方的依據，追問時若不附上，
-                // AI 會失去望診證據而改用別的方向推理，處方因此漂移。
+                // 望診影像：辨證階段（尚未開方）每輪都送，確保定方時看得到舌象面相；
+                // 一旦處方開立，AI 的望診判讀已寫進對話紀錄，後續守方問答不必再重傳，
+                // 否則每次追問都要上傳並重新辨識照片，容易拖到逾時。
                 const parts = [{ text: fullPrompt }];
-                for(let k in imgData) {
-                    if(imgData[k]) {
-                        parts.push({ inlineData: { mimeType: "image/jpeg", data: imgData[k] } });
+                if (!currentRx) {
+                    for(let k in imgData) {
+                        if(imgData[k]) {
+                            parts.push({ inlineData: { mimeType: "image/jpeg", data: imgData[k] } });
+                        }
                     }
                 }
 
@@ -941,8 +944,10 @@
                 const url = `http://127.0.0.1:8765/gemini?domain=tcm&key=${keyToUse}`;
                 const body = JSON.stringify({ contents: [{ parts }], generationConfig: { responseMimeType: "application/json" } });
 
+                // 逾時上限：v66 的辨證要生成完整處方＋內經機轉，加上後端遇 Gemini 限流會
+                // 自動退避重試(2s/4s)並換模型金鑰，60 秒明顯不足，放寬到 3 分鐘。
                 const controller = new AbortController();
-                const timeoutId = setTimeout(() => controller.abort(), 60000); 
+                const timeoutId = setTimeout(() => controller.abort(), 240000);
 
                 try {
                     // 使用 fetchWithRetry 防止 429 錯誤中斷
@@ -983,18 +988,24 @@
                 console.error(e);
                 const loadingBubble = document.getElementById('loading-bubble');
                 if(loadingBubble) loadingBubble.remove();
-                
+            clearLoadingTimer();
+
                 let errorMsg = "系統提示：" + e.message;
-                
+
                 if (e.name === 'AbortError') {
-                    errorMsg = "連線逾時。請減少圖片數量或檢查網路。";
+                    errorMsg = "⏱ 這次思考超過 4 分鐘仍未回覆，已中止。\n\n"
+                             + "常見原因是 AI 服務忙碌或網路不穩，通常再送出一次就會成功"
+                             + "（您剛才輸入的文字已保留在下方輸入框）。\n\n"
+                             + "※ 處方不受影響，仍是目前顯示的版本。";
                 } else if (e.message.includes("API key")) {
                     errorMsg = "API Key 無效。請檢查您的金鑰。";
                 }
-                
+
                 appendChatBubble('ni', errorMsg);
-                updateChatStatus("連線中斷");
+                updateChatStatus("可重新送出");
+                return false;   // 通知呼叫端：本次失敗，把使用者輸入還回去
             }
+            return true;
         }
 
         function handleAIResponse(res) {
@@ -1002,6 +1013,7 @@
             
             const loadingBubble = document.getElementById('loading-bubble');
             if(loadingBubble) loadingBubble.remove();
+            clearLoadingTimer();
             
             if (res.type === 'inquiry') {
                 // 階段一：隱藏處方卡，顯示追問
@@ -1099,14 +1111,33 @@
             box.scrollTop = box.scrollHeight;
         }
 
+        let loadingTimer = null;
         function showLoadingBubble() {
             const box = document.getElementById('chat-box');
             const bubble = document.createElement('div');
             bubble.id = 'loading-bubble';
             bubble.className = 'chat-bubble chat-ni flex items-center gap-1';
-            bubble.innerHTML = '<span class="text-xs text-gray-400 font-bold mr-1">倪師思考中</span><span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>';
+            bubble.innerHTML = '<span class="text-xs text-gray-400 font-bold mr-1">倪師思考中</span>'
+                + '<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>'
+                + '<span id="loading-elapsed" class="text-[10px] text-gray-400 ml-2"></span>';
             box.appendChild(bubble);
             box.scrollTop = box.scrollHeight;
+
+            // 顯示已等待秒數：辨證常需 30 秒以上，讓使用者知道系統仍在運作而非當機
+            const t0 = Date.now();
+            if (loadingTimer) clearInterval(loadingTimer);
+            loadingTimer = setInterval(() => {
+                const el = document.getElementById('loading-elapsed');
+                if (!el) { clearInterval(loadingTimer); loadingTimer = null; return; }
+                const s = Math.floor((Date.now() - t0) / 1000);
+                el.innerText = s < 30 ? `${s} 秒`
+                    : s < 90 ? `${s} 秒（辨證中，請稍候）`
+                    : `${s} 秒（仍在思考，最多等 240 秒）`;
+            }, 1000);
+        }
+
+        function clearLoadingTimer() {
+            if (loadingTimer) { clearInterval(loadingTimer); loadingTimer = null; }
         }
 
         function handleEnter(e) { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }
@@ -1121,7 +1152,19 @@
             input.value = '';
             showLoadingBubble();
             btn.disabled = true; btn.classList.add('opacity-50');
-            try { await callAI("", false); }
+            try {
+                const ok = await callAI("", false);
+                if (ok === false) {
+                    // 失敗時把發言退回輸入框，並移除已送出的泡泡與對話紀錄，
+                    // 讓使用者直接重送，不必重打，也不會在紀錄裡留下重複發言。
+                    input.value = text;
+                    const bubbles = document.querySelectorAll('#chat-box .chat-user');
+                    const last = bubbles[bubbles.length - 1];
+                    if (last && last.innerText.trim() === text) last.remove();
+                    const idx = chatHistory.map(m => m.text).lastIndexOf(text);
+                    if (idx >= 0) chatHistory.splice(idx, 1);
+                }
+            }
             finally { btn.disabled = false; btn.classList.remove('opacity-50'); }
         }
 
