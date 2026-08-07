@@ -32,7 +32,7 @@
 </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>倪海廈經方系統 (v66.2 守方穩定版)</title>
+    <title>倪海廈經方系統 (v66.3 守方穩定版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
@@ -130,7 +130,7 @@
                     倪海廈數位系統
                 </h1>
                 <p class="text-xs text-[#a8a29e] mt-1 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-green-500"></span> 守方穩定版 (v66.2)
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span> 守方穩定版 (v66.3)
                 </p>
             </div>
             <div class="flex items-center gap-3">
@@ -1340,7 +1340,9 @@
         }
         function nl2br(s) { return esc(s).replace(/\n/g, '<br>'); }
 
-        function buildDoctorDoc() {
+        // embedded=true：在 app 內以覆蓋層呈現，操作鈕由外層工具列提供，
+        // 文件本身不再重複放按鈕（內嵌時 window.close() 也無效）。
+        function buildDoctorDoc(embedded) {
             const rx = currentRx || {};
             const m = caseMeta || {};
             const now = new Date();
@@ -1436,13 +1438,13 @@ footer { margin-top:14px; padding-top:7px; border-top:1px solid #d6d3d1;
 .noprint button.alt { background:#78350f; }
 </style></head><body><div class="wrap">
 
-<div class="noprint">
+${embedded ? '' : `<div class="noprint">
   <button onclick="window.print()">🖨 列印 / 存成 PDF</button>
   <button class="alt" onclick="window.close()">關閉</button>
-</div>
+</div>`}
 
 <h1>經方辨證參考資料</h1>
-<div class="sub">供合格中醫師覆核之用　·　產生時間：${esc(stamp)}　·　系統版本 v66.2</div>
+<div class="sub">供合格中醫師覆核之用　·　產生時間：${esc(stamp)}　·　系統版本 v66.3</div>
 
 <div class="alert top">
   <b>⚠ 重要聲明（請務必先讀）</b><br>
@@ -1528,25 +1530,57 @@ ${history}
 </div></body></html>`;
         }
 
+        // 文件直接在本頁全螢幕開啟，不開新分頁也不下載——
+        // iPhone 的 Safari 預設封鎖彈出式視窗，舊做法會讓文件「不知道跑去哪」，
+        // 使用者得自己去翻分頁或「檔案」App。改成當場顯示，看得到才安心。
         window.exportDoctorDoc = () => {
             if (!currentRx) { showToast('尚未完成辨證，無處方可輸出'); return; }
-            const html = buildDoctorDoc();
-            const w = window.open('', '_blank');
-            if (w && w.document) {
-                w.document.open(); w.document.write(html); w.document.close();
-                showToast('文件已產生，可直接列印或存成 PDF');
-            } else {
-                // 手機瀏覽器常擋新視窗 → 改為下載檔案，一樣可開啟列印
+            const html = buildDoctorDoc(true);
+            const fullHtml = buildDoctorDoc(false);   // 存檔用：獨立開啟時仍需自帶列印鈕
+            const fname = `經方辨證參考資料_${(currentRx.bone_formula || '未開方')}_${new Date().toISOString().slice(0,10)}.html`;
+
+            const ov = document.createElement('div');
+            ov.id = 'doc-overlay';
+            ov.style.cssText = 'position:fixed;inset:0;z-index:2147483646;background:#fff;display:flex;flex-direction:column';
+            ov.innerHTML = `
+              <div style="flex:0 0 auto;background:#1c1917;color:#fef3c7;padding:8px 10px;display:flex;gap:6px;align-items:center">
+                <button id="doc-close" style="font:inherit;font-size:13px;padding:7px 11px;border:none;border-radius:6px;background:#e7e5e4;color:#1c1917;white-space:nowrap">✕ 關閉</button>
+                <span style="font-weight:700;font-size:13px;margin:0 auto;white-space:nowrap">醫師參考文件</span>
+                <button id="doc-save" style="font:inherit;font-size:13px;padding:7px 11px;border:none;border-radius:6px;background:#44403c;color:#e7e5e4;white-space:nowrap">⤓ 存檔</button>
+                <button id="doc-print" style="font:inherit;font-size:13px;padding:7px 13px;border:none;border-radius:6px;background:#78350f;color:#fef3c7;font-weight:700;white-space:nowrap">🖨 列印</button>
+              </div>
+              <iframe id="doc-frame" style="flex:1 1 auto;width:100%;border:0;background:#fff"></iframe>`;
+            document.body.appendChild(ov);
+            document.body.style.overflow = 'hidden';
+            // 首頁浮動鈕會穿透疊在文件上，暫時隱藏
+            const homeBtn = document.querySelector('a[title="回平台首頁"]');
+            if (homeBtn) homeBtn.style.display = 'none';
+
+            const fr = ov.querySelector('#doc-frame');
+            const d = fr.contentDocument || fr.contentWindow.document;
+            d.open(); d.write(html); d.close();
+
+            ov.querySelector('#doc-close').onclick = () => {
+                ov.remove(); document.body.style.overflow = '';
+                if (homeBtn) homeBtn.style.display = '';
+            };
+            ov.querySelector('#doc-print').onclick = () => {
+                // 列印 iframe 內容：iOS 需先 focus 才叫得出列印/分享面板
+                try { fr.contentWindow.focus(); fr.contentWindow.print(); }
+                catch (e) { window.print(); }
+            };
+            ov.querySelector('#doc-save').onclick = () => {
                 try {
-                    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+                    const blob = new Blob([fullHtml], { type: 'text/html;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
                     const a = document.createElement('a');
-                    a.href = URL.createObjectURL(blob);
-                    a.download = `經方辨證參考資料_${(currentRx.bone_formula || '未開方')}_${new Date().toISOString().slice(0,10)}.html`;
+                    a.href = url; a.download = fname; a.target = '_blank';
                     document.body.appendChild(a); a.click();
-                    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
-                    showToast('已下載文件檔，開啟後即可列印或存 PDF');
-                } catch (e) { showToast('文件產生失敗：' + e.message); }
-            }
+                    setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 1500);
+                    showToast('已存檔（iPhone 請到「檔案 App → 下載項目」查看）');
+                } catch (e) { showToast('存檔失敗：' + e.message); }
+            };
+            showToast('文件已開啟');
         };
 
         function showToast(msg) {
