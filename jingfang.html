@@ -32,7 +32,7 @@
 </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>倪海廈經方系統 (v66.1 守方穩定版)</title>
+    <title>倪海廈經方系統 (v66.2 守方穩定版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
@@ -130,7 +130,7 @@
                     倪海廈數位系統
                 </h1>
                 <p class="text-xs text-[#a8a29e] mt-1 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-green-500"></span> 守方穩定版 (v66.1)
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span> 守方穩定版 (v66.2)
                 </p>
             </div>
             <div class="flex items-center gap-3">
@@ -377,6 +377,14 @@
                              <div class="mt-3 pt-2 border-t border-gray-200 text-[10px] text-gray-500 leading-relaxed">
                                  ⚕ 本系統為經方教學輔助工具，非醫療行為。處方須經<b>合格中醫師</b>當面確認脈證後方可抓藥服用；孕婦、慢性病與服用西藥者尤須主動告知醫師。急症請直接就醫或撥打 119。
                              </div>
+
+                            <!-- 醫師參考文件輸出：把完整辨證依據交給合格中醫師覆核 -->
+                            <button onclick="exportDoctorDoc()" class="w-full mt-3 bg-[#1c1917] hover:bg-black text-white text-sm font-bold py-2.5 rounded-lg shadow transition-all active:scale-[.98] flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-file-medical"></i> 產出「醫師參考文件」（可列印／存 PDF）
+                            </button>
+                            <div class="text-[10px] text-gray-400 text-center mt-1 leading-relaxed">
+                                含問診全文、條文佐證、鑑別診斷、信心度、處方演變與醫師簽核欄
+                            </div>
                         </div>
 
                         <!-- 備註區 -->
@@ -402,7 +410,7 @@
                     </div>
 
                     <div class="p-3 bg-white border-t border-gray-200 flex gap-2 items-end shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
-                        <textarea id="chat-input" rows="2" class="flex-grow p-3 border border-gray-300 rounded-lg text-sm focus:border-[#78350f] focus:ring-1 focus:ring-[#78350f] outline-none resize-none shadow-inner" placeholder="請回答倪師的追問，或輸入您的疑問..." onkeypress="handleEnter(event)"></textarea>
+                        <textarea id="chat-input" rows="2" class="flex-grow p-3 border border-gray-300 rounded-lg text-sm focus:border-[#78350f] focus:ring-1 focus:ring-[#78350f] outline-none resize-none shadow-inner" placeholder="請回答倪師的追問，或輸入您的疑問..." onkeypress="handleEnter(event)" oninput="saveDraft()"></textarea>
                         
                         <button onclick="sendChatMessage()" id="send-btn" class="bg-[#1c1917] hover:bg-black text-white px-5 py-3 rounded-lg shadow-md transition-all active:scale-95 flex items-center gap-2 whitespace-nowrap h-full">
                             <i class="fa-solid fa-paper-plane"></i> <span class="font-bold">發送</span>
@@ -465,6 +473,8 @@
         let vitalsAnchor = "";      // 病患體格基準（年齡/身高/體重），每輪重述以固定劑量
         let currentRx = null;       // 已開立處方的鎖定快照：追問時原樣沿用，非有新證據不得更動
         let rxVersion = 0;          // 處方版次：每次確有理由的調整才 +1
+        let rxHistory = [];         // 各版處方與變更理由，供產出醫師參考文件時完整交代
+        let caseMeta = null;        // 病患基本資料與問診原始選項，供文件呈現
 
         const questionsBase = [
             { id: 'q1', text: '一、睡眠 (Sleep)', options: ['一覺到天亮', '入睡困難 (心)', '半夜醒 (肝/肺)', '嗜睡 (少陰)'] },
@@ -744,9 +754,25 @@
             // 體格基準單獨保存並每輪重述，避免長對話中被稀釋而導致劑量浮動
             vitalsAnchor = `${gender}／${age}歲／身高${height}cm／體重${weight}kg（此為劑量計算依據，全程不變）`;
 
+            // 保存原始問診資料，供產出醫師參考文件時完整呈現
+            caseMeta = {
+                gender, age, height, weight, complaint,
+                special: spFlags.length ? spFlags.join('、') : '無申報',
+                specialDetail: spDetail,
+                redFlags: redHits,
+                answers: questionsBase.map(q => ({
+                    題目: q.text,
+                    選項: document.querySelector(`input[name="${q.id}"]:checked`).value,
+                    自述: document.getElementById(`detail-${q.id}`).value || ''
+                })),
+                images: Object.keys(imgData).filter(k => imgData[k]),
+                startedAt: new Date().toISOString()
+            };
+
             chatHistory = [];
             currentRx = null;   // 新病患：清空上一位的處方鎖
             rxVersion = 0;
+            rxHistory = [];
             currentRecordId = Date.now().toString();
             document.getElementById('chat-box').innerHTML = '';
             document.getElementById('result-card-container').classList.add('hidden'); // 初始不顯示處方，因為要先問診
@@ -1026,6 +1052,7 @@
                     // 階段二：首次確診開方 → 鎖定處方
                     currentRx = res.diagnosis_data;
                     rxVersion = 1;
+                    recordRxVersion(res.diagnosis_data, null);
                     renderDiagnosis(res.diagnosis_data, null);
                 } else {
                     // 已有處方卻又送來一份 diagnosis：AI 未依規定走 revision 流程。
@@ -1036,11 +1063,13 @@
                     } else {
                         currentRx = res.diagnosis_data;
                         rxVersion = rxVersion + 1;
-                        renderDiagnosis(res.diagnosis_data, {
+                        const autoReason = {
                             new_evidence: '（系統提示：AI 未依規定說明改方理由，以下為系統自動比對的結果）',
                             changes: changes.join('；'),
                             why: '本次變動未附理由，請勿逕自更換藥方——請在對話中直接追問「為什麼要改方」，或以前一版處方諮詢中醫師後再決定。'
-                        });
+                        };
+                        recordRxVersion(res.diagnosis_data, autoReason);
+                        renderDiagnosis(res.diagnosis_data, autoReason);
                         appendChatBubble('ni', '⚠️ 系統提示：本次回覆更動了處方但未說明理由，已為您標示變更內容。請追問改方原因後再決定是否採用。');
                     }
                 }
@@ -1067,6 +1096,7 @@
                     } else {
                         currentRx = res.diagnosis_data;
                         rxVersion = rxVersion + 1;
+                        recordRxVersion(res.diagnosis_data, cr);
                         renderDiagnosis(res.diagnosis_data, cr);
                     }
                     document.getElementById('result-card-container').classList.remove('hidden');
@@ -1142,6 +1172,32 @@
 
         function handleEnter(e) { if(e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChatMessage(); } }
 
+        // --- 草稿保全 ---
+        // 手機瀏覽器在長時間等待中可能把分頁丟棄重載、誤觸返回、或連線中斷，
+        // 都會讓打好的字消失。改成每次輸入即存本機，重開頁面自動帶回。
+        const DRAFT_KEY = 'ni_tcm_draft';
+        function saveDraft() {
+            try {
+                const v = document.getElementById('chat-input').value;
+                if (v.trim()) localStorage.setItem(DRAFT_KEY, v);
+                else localStorage.removeItem(DRAFT_KEY);
+            } catch(e) {}
+        }
+        function clearDraft() { try { localStorage.removeItem(DRAFT_KEY); } catch(e) {} }
+        function restoreDraft() {
+            try {
+                const v = localStorage.getItem(DRAFT_KEY);
+                const el = document.getElementById('chat-input');
+                if (v && el && !el.value) {
+                    el.value = v;
+                    showToast('已為您帶回上次未送出的文字');
+                }
+            } catch(e) {}
+        }
+        window.addEventListener('DOMContentLoaded', restoreDraft);
+        window.addEventListener('pagehide', saveDraft);      // iOS Safari 切換 app／鎖屏
+        window.addEventListener('beforeunload', saveDraft);
+
         async function sendChatMessage() {
             const input = document.getElementById('chat-input');
             const btn = document.getElementById('send-btn');
@@ -1150,6 +1206,7 @@
             if(!text) return;
             appendChatBubble('user', text);
             input.value = '';
+            // 送出後草稿先保留，等確定成功才清除——中途失敗或頁面被丟棄都還原得回來
             showLoadingBubble();
             btn.disabled = true; btn.classList.add('opacity-50');
             try {
@@ -1158,17 +1215,30 @@
                     // 失敗時把發言退回輸入框，並移除已送出的泡泡與對話紀錄，
                     // 讓使用者直接重送，不必重打，也不會在紀錄裡留下重複發言。
                     input.value = text;
+                    saveDraft();
                     const bubbles = document.querySelectorAll('#chat-box .chat-user');
                     const last = bubbles[bubbles.length - 1];
                     if (last && last.innerText.trim() === text) last.remove();
                     const idx = chatHistory.map(m => m.text).lastIndexOf(text);
                     if (idx >= 0) chatHistory.splice(idx, 1);
+                } else {
+                    clearDraft();   // 確定送出成功才清掉草稿
                 }
             }
             finally { btn.disabled = false; btn.classList.remove('opacity-50'); }
         }
 
         function updateChatStatus(status) { document.getElementById('chat-status').innerText = status; }
+
+        // 記錄每一版處方與其變更理由，供醫師參考文件完整交代處方演變過程
+        function recordRxVersion(rx, changeReason) {
+            rxHistory.push({
+                version: rxVersion,
+                at: new Date().toISOString(),
+                rx: JSON.parse(JSON.stringify(rx || {})),
+                changeReason: changeReason || null
+            });
+        }
 
         // --- 處方比對：用來偵測 AI 是否在沒說明理由的情況下改了方 ---
         function rxHerbMap(rx) {
@@ -1256,6 +1326,228 @@
                 : (data.differential || '');
             optionalFill('rx-diff-box', 'rx-diff', diffText);
         }
+
+        // ============================================================
+        //  醫師參考文件輸出
+        //  產生可列印／可存 PDF 的正式文件，交給合格中醫師覆核。
+        //  設計原則：把 AI 的所有依據與不確定性攤開給醫師看，
+        //  包含條文佐證、鑑別診斷、信心度、處方改過幾次與原因、問診全文。
+        // ============================================================
+        function esc(s) {
+            return String(s == null ? '' : s)
+                .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;');
+        }
+        function nl2br(s) { return esc(s).replace(/\n/g, '<br>'); }
+
+        function buildDoctorDoc() {
+            const rx = currentRx || {};
+            const m = caseMeta || {};
+            const now = new Date();
+            const stamp = now.toLocaleString('zh-TW', { hour12: false });
+            const herbs = (rx.bone_herbs || []).map(h =>
+                `<tr><td>${esc(h.name)}</td><td class="dose">${esc(h.dose)}</td></tr>`).join('');
+            const mods = (rx.modifications || []).map(x =>
+                `<tr><td>${esc(x.action || '')}${esc(x.name)}</td><td class="dose">${esc(x.dose)}</td>
+                 <td class="reason">${esc(x.reason || '')}</td></tr>`).join('');
+            const qa = (m.answers || []).map(a =>
+                `<tr><td>${esc(a.題目)}</td><td>${esc(a.選項)}</td><td>${esc(a.自述)}</td></tr>`).join('');
+            const diff = Array.isArray(rx.differential)
+                ? rx.differential.map(d => `<li><b>${esc(d.formula)}</b> — 排除理由：${esc(d.excluded_reason)}</li>`).join('')
+                : (rx.differential ? `<li>${esc(rx.differential)}</li>` : '');
+
+            // 處方演變：只有改過方才呈現，讓醫師一眼看出前後差異與理由
+            let history = '';
+            if (rxHistory.length > 1) {
+                history = rxHistory.map((h, i) => {
+                    const cr = h.changeReason;
+                    const hHerbs = (h.rx.bone_herbs || []).map(x => `${x.name} ${x.dose}`).join('、');
+                    return `<div class="hist">
+                        <div class="hist-h">第 ${h.version} 版　${esc(h.rx.bone_formula || '')}
+                            <span class="muted">${new Date(h.at).toLocaleString('zh-TW', { hour12: false })}</span></div>
+                        <div class="hist-b">${esc(hHerbs)}</div>
+                        ${cr ? `<div class="hist-r">
+                            <b>變更依據：</b>${esc(cr.new_evidence)}<br>
+                            <b>調整內容：</b>${esc(cr.changes)}<br>
+                            <b>變更理由：</b>${esc(cr.why)}</div>` : ''}
+                    </div>`;
+                }).join('');
+                history = `<h2>十二、處方演變歷程（本案共 ${rxHistory.length} 版，請留意變更原因）</h2>${history}`;
+            }
+
+            const dialog = chatHistory.map(x =>
+                `<div class="msg ${x.role === 'ni' ? 'ni' : 'pt'}">
+                    <span class="who">${x.role === 'ni' ? '系統' : '病患'}：</span>${nl2br(x.text)}</div>`).join('');
+
+            const redFlagBox = (m.redFlags && m.redFlags.length)
+                ? `<div class="alert red"><b>🚨 急症紅旗警示</b><br>問診描述含「${esc(m.redFlags.join('、'))}」等急症關鍵詞，
+                   已提示病患評估即刻就醫。請醫師優先排除急重症。</div>` : '';
+
+            return `<!DOCTYPE html><html lang="zh-TW"><head><meta charset="UTF-8">
+<title>經方辨證參考資料_${esc(rx.bone_formula || '未開方')}_${now.toISOString().slice(0,10)}</title>
+<style>
+@page { size: A4; margin: 16mm 14mm; }
+/* 這是正式列印文件，一律以淺色呈現；否則深色模式下會變成黑底黑字看不見 */
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+html, body { background:#ffffff; }
+body { font-family: "Noto Serif TC","PingFang TC",serif; color:#1c1917; line-height:1.75;
+       font-size: 11.5pt; margin:0; padding:0; }
+dd { margin:0; color:#1c1917; }
+.wrap { max-width: 780px; margin: 0 auto; padding: 12px; }
+h1 { font-size: 17pt; text-align:center; margin:0 0 2px; letter-spacing:2px; }
+.sub { text-align:center; font-size:10pt; color:#57534e; margin-bottom:10px; }
+h2 { font-size: 12pt; background:#f5f5f4; border-left:4px solid #78350f; padding:5px 9px;
+     margin:16px 0 7px; page-break-after:avoid; }
+table { width:100%; border-collapse:collapse; margin:5px 0 8px; font-size:10.5pt; }
+th,td { border:1px solid #d6d3d1; padding:4px 7px; text-align:left; vertical-align:top; }
+th { background:#fafaf9; font-weight:700; }
+td.dose { font-family:ui-monospace,Menlo,monospace; white-space:nowrap; width:32%; }
+td.reason { color:#57534e; font-size:9.5pt; }
+.alert { border:2px solid #78350f; background:#fffbeb; padding:9px 12px; margin:9px 0;
+         font-size:10.5pt; border-radius:4px; }
+.alert.red { border-color:#b91c1c; background:#fef2f2; color:#7f1d1d; }
+.alert.top { border-color:#78350f; background:#fef3c7; }
+.kv { display:grid; grid-template-columns:110px 1fr; gap:2px 10px; font-size:10.5pt; margin:4px 0; }
+.kv dt { font-weight:700; color:#78350f; }
+.box { border:1px solid #e7e5e4; background:#fafaf9; padding:8px 11px; margin:5px 0;
+       font-size:10.5pt; text-align:justify; }
+.hist { border:1px solid #e7e5e4; border-left:4px solid #d97706; padding:7px 10px; margin:6px 0;
+        font-size:10pt; page-break-inside:avoid; }
+.hist-h { font-weight:700; color:#78350f; }
+.hist-b { font-family:ui-monospace,Menlo,monospace; font-size:9.5pt; color:#44403c; margin:2px 0; }
+.hist-r { background:#fff7ed; padding:5px 8px; margin-top:4px; font-size:9.5pt; }
+.muted { color:#78716c; font-weight:400; font-size:9pt; }
+.msg { margin:4px 0; font-size:10pt; padding:4px 8px; border-radius:3px; page-break-inside:avoid; }
+.msg.ni { background:#f5f5f4; } .msg.pt { background:#eff6ff; }
+.who { font-weight:700; color:#78350f; }
+.sign { border:2px solid #1c1917; padding:12px 14px; margin-top:14px; page-break-inside:avoid; }
+.sign h3 { margin:0 0 8px; font-size:12pt; }
+.line { border-bottom:1px solid #78716c; height:26px; margin:6px 0 2px; }
+.lbl { font-size:9.5pt; color:#57534e; }
+.two { display:grid; grid-template-columns:1fr 1fr; gap:0 18px; }
+.opt { font-size:10.5pt; margin:6px 0; }
+footer { margin-top:14px; padding-top:7px; border-top:1px solid #d6d3d1;
+         font-size:8.5pt; color:#78716c; text-align:center; line-height:1.6; }
+@media print { .noprint { display:none !important; } body { padding:0; } }
+.noprint { text-align:center; margin:10px 0 16px; }
+.noprint button { font:inherit; font-size:11pt; padding:9px 20px; margin:0 5px; cursor:pointer;
+    background:#1c1917; color:#fff; border:none; border-radius:6px; }
+.noprint button.alt { background:#78350f; }
+</style></head><body><div class="wrap">
+
+<div class="noprint">
+  <button onclick="window.print()">🖨 列印 / 存成 PDF</button>
+  <button class="alt" onclick="window.close()">關閉</button>
+</div>
+
+<h1>經方辨證參考資料</h1>
+<div class="sub">供合格中醫師覆核之用　·　產生時間：${esc(stamp)}　·　系統版本 v66.2</div>
+
+<div class="alert top">
+  <b>⚠ 重要聲明（請務必先讀）</b><br>
+  本文件由 <b>AI 輔助辨證系統</b>依《傷寒論》《金匱要略》與倪海廈教學體系之知識庫生成，
+  <b>不是醫療診斷，也不是處方箋</b>。系統未經把脈、未經當面望聞問切，所有判斷僅根據病患自述文字與上傳影像。<br>
+  <b>未經合格中醫師當面診察並於下方簽核前，不得據以抓藥或服用。</b>
+  文件內所列方藥與劑量僅供醫師討論參考，最終處方權責歸屬簽核醫師。
+</div>
+
+${redFlagBox}
+
+<h2>一、病患基本資料</h2>
+<dl class="kv">
+  <dt>性別</dt><dd>${esc(m.gender || '—')}</dd>
+  <dt>年齡</dt><dd>${esc(m.age || '—')} 歲</dd>
+  <dt>身高／體重</dt><dd>${esc(m.height || '—')} cm ／ ${esc(m.weight || '—')} kg</dd>
+  <dt>問診時間</dt><dd>${m.startedAt ? esc(new Date(m.startedAt).toLocaleString('zh-TW', { hour12: false })) : '—'}</dd>
+</dl>
+
+<h2>二、特殊情況（用藥安全把關）</h2>
+<div class="box">${esc(m.special || '無申報')}${m.specialDetail ? '<br>詳述：' + esc(m.specialDetail) : ''}</div>
+
+<h2>三、主訴</h2>
+<div class="box">${nl2br(m.complaint || '—')}</div>
+
+<h2>四、問診紀錄（倪師十一問）</h2>
+<table><thead><tr><th style="width:26%">項目</th><th style="width:30%">選項</th><th>病患自述</th></tr></thead>
+<tbody>${qa || '<tr><td colspan="3">—</td></tr>'}</tbody></table>
+
+<h2>五、望診資料</h2>
+<div class="box">${(m.images && m.images.length)
+    ? '病患已上傳：' + esc(m.images.map(k => ({tongue:'舌象',face:'面相',sleep:'睡眠監測',hr:'靜止心率',hrv:'HRV',spo2:'血氧'}[k] || k)).join('、')) +
+      '<br><span class="muted">※ 影像僅供 AI 初步判讀，未隨本文件輸出；如需調閱請向病患索取原圖。</span>'
+    : '病患未上傳舌象或面相照片，AI 判讀僅依文字自述，<b>可靠度因此受限</b>。'}</div>
+
+<h2>六、AI 辨證結果</h2>
+<dl class="kv">
+  <dt>六經辨證</dt><dd>${esc(rx.stage || '—')}</dd>
+  <dt>八綱</dt><dd>${esc(rx.bagang || '—')}</dd>
+  <dt>病機</dt><dd>${esc(rx.pathology || '—')}</dd>
+  <dt>信心度</dt><dd><b>${esc(rx.confidence || '未評估')}</b></dd>
+</dl>
+${rx.classic_reference ? `<div class="box"><b>條文佐證：</b>${nl2br(rx.classic_reference)}</div>` : ''}
+${diff ? `<div class="box"><b>鑑別診斷（曾考慮並排除）：</b><ul style="margin:4px 0 0 18px;padding:0">${diff}</ul></div>` : ''}
+
+<h2>七、建議處方（現行第 ${rxVersion} 版）　${esc(rx.bone_formula || '未開方')}</h2>
+<table><thead><tr><th>藥材</th><th>劑量</th></tr></thead><tbody>${herbs || '<tr><td colspan="2">—</td></tr>'}</tbody></table>
+${mods ? `<b style="font-size:10.5pt">加減：</b>
+<table><thead><tr><th>藥材</th><th>劑量</th><th>加減理由</th></tr></thead><tbody>${mods}</tbody></table>` : ''}
+${rx.reason ? `<div class="box"><b>方義：</b>${nl2br(rx.reason)}</div>` : ''}
+
+${rx.neijing_mechanism ? `<h2>八、內經藥行機轉</h2><div class="box">${nl2br(rx.neijing_mechanism)}</div>` : ''}
+${rx.decoction ? `<h2>九、煎服法</h2><div class="box">${nl2br(rx.decoction)}</div>` : ''}
+${rx.warnings ? `<h2>十、禁忌與停藥警訊</h2><div class="alert red">${nl2br(rx.warnings)}</div>` : ''}
+${rx.followup ? `<h2>十一、預期療效與回診指標</h2><div class="box">${nl2br(rx.followup)}</div>` : ''}
+${history}
+
+<h2>${rxHistory.length > 1 ? '十三' : '十二'}、問診對話全文</h2>
+<div style="font-size:10pt">${dialog || '—'}</div>
+
+<div class="sign">
+  <h3>合格中醫師覆核欄</h3>
+  <div class="opt">
+    覆核結論：　☐ 同意本方　　☐ 修改後使用（請於下方載明）　　☐ 不同意，另行處方
+  </div>
+  <div class="lbl">醫師意見／修改內容：</div>
+  <div class="line"></div><div class="line"></div><div class="line"></div>
+  <div class="two" style="margin-top:10px">
+    <div><div class="line"></div><div class="lbl">醫師姓名（簽章）</div></div>
+    <div><div class="line"></div><div class="lbl">中醫師證書字號</div></div>
+  </div>
+  <div class="two" style="margin-top:6px">
+    <div><div class="line"></div><div class="lbl">院所名稱</div></div>
+    <div><div class="line"></div><div class="lbl">覆核日期</div></div>
+  </div>
+</div>
+
+<footer>
+  本文件為非營利學習分享平台之輔助資料，倪海廈老師教學著作權歸倪師／漢唐中醫所有。<br>
+  內容不構成診療或處方，就醫請諮詢合格醫師。急症請直接就醫或撥打 119。<br>
+  產生於 ${esc(stamp)}　·　天紀・倪海廈 中醫命理學習分享平台
+</footer>
+</div></body></html>`;
+        }
+
+        window.exportDoctorDoc = () => {
+            if (!currentRx) { showToast('尚未完成辨證，無處方可輸出'); return; }
+            const html = buildDoctorDoc();
+            const w = window.open('', '_blank');
+            if (w && w.document) {
+                w.document.open(); w.document.write(html); w.document.close();
+                showToast('文件已產生，可直接列印或存成 PDF');
+            } else {
+                // 手機瀏覽器常擋新視窗 → 改為下載檔案，一樣可開啟列印
+                try {
+                    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+                    const a = document.createElement('a');
+                    a.href = URL.createObjectURL(blob);
+                    a.download = `經方辨證參考資料_${(currentRx.bone_formula || '未開方')}_${new Date().toISOString().slice(0,10)}.html`;
+                    document.body.appendChild(a); a.click();
+                    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+                    showToast('已下載文件檔，開啟後即可列印或存 PDF');
+                } catch (e) { showToast('文件產生失敗：' + e.message); }
+            }
+        };
 
         function showToast(msg) {
             const t = document.getElementById('toast');
