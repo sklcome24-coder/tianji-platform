@@ -1,0 +1,4 @@
+# 本機備份，不進版控
+ziwei.backup-*.html
+.DS_Store
+__pycache__/
