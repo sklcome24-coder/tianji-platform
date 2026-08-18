@@ -655,6 +655,15 @@ function ZiweiYiDivine() {
   const [isLunarLibLoaded, setIsLunarLibLoaded] = useState(false);
   const [calendarData, setCalendarData] = useState(null);
   const [localImages, setLocalImages] = useState({});
+  const [backendInfo, setBackendInfo] = useState("");
+  useEffect(() => {
+    /* 讀後端 /health，把實際生效的模型顯示在設定裡 */
+    fetch("http://127.0.0.1:8765/health").then(r => r.json()).then(d => {
+      const fate = d.provider_by_domain && d.provider_by_domain.fate || d.provider || "?";
+      const model = fate === "anthropic" ? d.anthropic_model || "claude" : d.model || "gemini";
+      setBackendInfo(`命理走 ${model}`);
+    }).catch(() => setBackendInfo("連不上後端"));
+  }, []);
   /* 六十四卦圖已隨 app 固化於 assets/hexagrams/，不必再逐張上傳。
      解析順序：使用者上傳（IndexedDB）優先，沒有才用內建圖——保留覆蓋能力，
      讓你日後換自己的圖版時不必改程式。 */
@@ -1721,7 +1730,7 @@ ${showDisaster ? `## 第一步：【流年警訊提醒】(Critical)
     className: "mb-4"
   }, /*#__PURE__*/React.createElement("label", {
     className: "block text-sm font-bold text-stone-700 mb-2"
-  }, "Gemini API Key"), /*#__PURE__*/React.createElement("div", {
+  }, "\u901A\u884C\u5BC6\u8A9E"), /*#__PURE__*/React.createElement("div", {
     className: "relative"
   }, /*#__PURE__*/React.createElement(KeyRound, {
     size: 16,
@@ -1734,7 +1743,9 @@ ${showDisaster ? `## 第一步：【流年警訊提醒】(Critical)
     className: "w-full pl-9 pr-3 py-2 border border-stone-300 rounded focus:border-amber-600 outline-none text-sm"
   })), /*#__PURE__*/React.createElement("p", {
     className: "text-[10px] text-stone-500 mt-1"
-  }, "* \u91D1\u9470\u5C07\u50C5\u5132\u5B58\u65BC\u60A8\u7684\u672C\u6A5F\u700F\u89BD\u5668\u4E2D\u3002", /*#__PURE__*/React.createElement("br", null), "* \u8ACB\u81F3 Google AI Studio \u514D\u8CBB\u7533\u8ACB\u3002")), /*#__PURE__*/React.createElement("button", {
+  }, "* \u50C5\u5132\u5B58\u65BC\u672C\u6A5F\u700F\u89BD\u5668\uFF0C\u6BCF\u53F0\u88DD\u7F6E\u5404\u586B\u4E00\u6B21\u3002", /*#__PURE__*/React.createElement("br", null), "* \u5728 Mac \u7D42\u7AEF\u6A5F\u57F7\u884C ", /*#__PURE__*/React.createElement("code", null, "cat ~/.rag_token"), " \u53D6\u5F97\u3002", /*#__PURE__*/React.createElement("br", null), "* \u5224\u8B80\u7531\u5F8C\u7AEF\u4EE3\u70BA\u547C\u53EB\u6A21\u578B\uFF0C\u6B64\u8655\u4E0D\u9700\u586B API \u91D1\u9470\u3002")), /*#__PURE__*/React.createElement("div", {
+    className: "text-[10px] text-stone-500 mb-2 border-t pt-2"
+  }, "\u5F8C\u7AEF\u72C0\u614B\uFF1A", backendInfo || "查詢中…"), /*#__PURE__*/React.createElement("button", {
     onClick: saveSettings,
     className: "w-full bg-amber-800 text-white py-2 rounded font-bold hover:bg-amber-900 transition-colors"
   }, "\u5132\u5B58\u8A2D\u5B9A"))), isImageModalOpen && activeHexagramInfo && /*#__PURE__*/React.createElement("div", {
@@ -2235,9 +2246,9 @@ ${showDisaster ? `## 第一步：【流年警訊提醒】(Critical)
     className: "mx-2 bg-red-100 border border-red-500 rounded p-1 text-[9px] text-red-800 font-bold animate-pulse text-left"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-1 mb-1 border-b border-red-300"
-  }, /*#__PURE__*/React.createElement(Skull, {
+  }, /*#__PURE__*/React.createElement(AlertCircle, {
     size: 10
-  }), " \u516D\u89AA\u6025\u707D\u9810\u8B66"), disasterFlags.map((f, i) => /*#__PURE__*/React.createElement("div", {
+  }), " \u6D41\u5E74\u9808\u7559\u610F\u4E4B\u8655"), disasterFlags.map((f, i) => /*#__PURE__*/React.createElement("div", {
     key: i
   }, "\u2022 ", f.msg))), /*#__PURE__*/React.createElement("div", {
     className: "flex justify-around items-center px-2 font-serif"
