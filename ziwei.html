@@ -542,8 +542,13 @@ const fetchWithRetry = async (url, options, maxRetries = 2) => {
   }
 };
 
-// 正宗梅花易數時間起卦（農曆）：年支數+月+日 起上卦，加時辰數起下卦，總數取動爻。
-// 另加「問事字數」為外應數，使同一時辰之內不同問事可得不同卦（一事一卦，仍為決定性起卦、非亂數）。
+// 正宗梅花易數「年月日時起卦」（農曆）：年支數+月+日 起上卦，加時辰數起下卦，總數取動爻。
+//
+// 2026-08-21 修正：原本把「問事字數」加進這條算式當外應。那既非時間起卦、
+// 也非字數起卦，而是兩法相加；且上下卦皆以八除取餘，字數每加八就回到同一卦——
+// 同一時辰內本卦只剩八種可能，連問數題必然一直撞到同幾個卦。
+// 現改回純時間起卦：**一個時辰一個卦，與問句無關**。要問第二件事，隔時辰再起。
+// questionText 仍收下供記錄，但不參與起卦。
 const calculateHexagram = (forceId = null, questionText = "") => {
   const now = new Date();
   let fullGanZhi = "";
@@ -639,13 +644,13 @@ const calculateHexagram = (forceId = null, questionText = "") => {
     }
     return buildResult(fu, fl, 0, fu + fl, "指定卦");
   }
-  const charCount = (questionText || "").replace(/\s/g, "").length;
-  const upperSum = yearNum + monthNum + dayNum + charCount;
+  const charCount = (questionText || "").replace(/\s/g, "").length; // 僅記錄，不入算式
+  const upperSum = yearNum + monthNum + dayNum;
   const totalSum = upperSum + hourNum;
   const upperIdx = upperSum % 8 || 8;
   const lowerIdx = totalSum % 8 || 8;
   const movingLine = totalSum % 6 || 6;
-  return buildResult(upperIdx, lowerIdx, movingLine, totalSum, charCount > 0 ? `農曆時間＋問事字數(${charCount})起卦` : "農曆時間起卦");
+  return buildResult(upperIdx, lowerIdx, movingLine, totalSum, "年月日時起卦（一時辰一卦）");
 };
 function ZiweiYiDivine() {
   const [birthYear, setBirthYear] = useState('1984');
