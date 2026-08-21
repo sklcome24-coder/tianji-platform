@@ -278,9 +278,14 @@
         };
 
         // --- 防 429 錯誤的重試機制 ---
-        const fetchWithRetry = async (url, options, maxRetries = 5) => {
+        // 只對「伺服器明說稍後再試」的狀態重試。
+        // 網路中斷與逾時一律不重試 —— 2026-08-18 的教訓：判讀跑 156 秒、
+        // 隧道 100 秒就閒置切斷，前端把它當成可重試的失敗，一題連燒五輪完整生成、
+        // 一個字都拿不到。重試只有在「同樣的請求下次可能成功」時才有意義。
+        const RETRYABLE = [429, 500, 502, 503, 529];
+        const fetchWithRetry = async (url, options, maxRetries = 2) => {
             let retries = 0;
-            while (retries <= maxRetries) {
+            while (true) {
                 try {
                     const response = await fetch(url, options);
                     if (!response.ok) {
@@ -291,11 +296,21 @@
                     return response;
                 } catch (error) {
                     if (error.name === 'AbortError') throw error;
-                    if (error.status && [400, 403, 404].includes(error.status)) throw error;
-                    
-                    if (retries >= maxRetries) {
+
+                    // 403：後端要密語。這是設定問題，重試一百次也不會過，
+                    // 而且原本只顯示「API Error: 403」，看的人無從知道要做什麼。
+                    if (error.status === 403) {
+                        throw new Error("【需要通行密語】請點右上角「設定」，把密語填進「通行密語」欄位。"
+                                      + "密語在 Mac 終端機執行 cat ~/.rag_token 取得；每台裝置各填一次。");
+                    }
+                    // 網路層失敗（連線被切、逾時）沒有 status —— 不重試。
+                    if (!error.status || !RETRYABLE.includes(error.status) || retries >= maxRetries) {
                         if (error.status === 429) {
                             throw new Error("請求太頻繁 (API 429 Error)，請稍等一分鐘後再試。");
+                        }
+                        if (!error.status) {
+                            throw new Error("【連線失敗或逾時】後端沒有在時限內回應。"
+                                          + "若是用手機連家中 Mac，隧道約 100 秒會閒置切斷；請改用電腦，或縮短提問。");
                         }
                         throw error;
                     }
