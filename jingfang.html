@@ -27,6 +27,40 @@
     }
     return _fetch(u, o);
   };
+  /* 通行密語與 Gemini 金鑰分開存。
+     後端 /gemini 驗的是密語，ziwei 的語音朗讀打 Google 用的才是金鑰；
+     兩者原本擠在 localStorage['gemini_api_key'] 同一格，填哪個都會弄壞另一邊。 */
+  var TOKEN_KEY = 'ni_access_token';
+  try {
+    /* 一次性設定連結 …#k=<密語>：存好就把片段從網址抹掉，不留在瀏覽紀錄裡。
+       片段不會送到伺服器，也不會進 repo，手機端不必手打 24 個字。 */
+    var m = location.hash.match(/[#&]k=([^&]+)/);
+    if (m) {
+      localStorage.setItem(TOKEN_KEY, decodeURIComponent(m[1]));
+      history.replaceState(null, '', location.pathname + location.search);
+    }
+    /* 舊裝置這格存的是 Google 金鑰（AIza… / AQ.…），拿去當密語必被擋成 403。
+       不刪掉——語音朗讀還要用——只是不再誤當密語。 */
+    if (!localStorage.getItem(TOKEN_KEY)) {
+      var legacy = localStorage.getItem('gemini_api_key') || '';
+      if (legacy && !/^AIza/.test(legacy) && !/^AQ\./.test(legacy)) {
+        localStorage.setItem(TOKEN_KEY, legacy);
+      }
+    }
+  } catch (e) {}
+  /* 頁面已經開著時點設定連結，瀏覽器只做同文件導覽、上面那段不會重跑。
+     手機上這是常態（連結多半在已開的分頁裡打開），所以補這個。 */
+  window.addEventListener('hashchange', function () {
+    var mm = location.hash.match(/[#&]k=([^&]+)/);
+    if (!mm) return;
+    try {
+      localStorage.setItem(TOKEN_KEY, decodeURIComponent(mm[1]));
+      history.replaceState(null, '', location.pathname + location.search);
+    } catch (e) {}
+  });
+  window.__NI_TOKEN__ = function () {
+    try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; }
+  };
   window.__NI_BACKEND_READY__ = ready.then(function(){ return base; });
 })();
 </script>
@@ -427,8 +461,8 @@
         <div class="bg-white p-6 rounded-lg shadow-2xl w-96">
             <h3 class="text-lg font-bold mb-4 text-[#2d2a26]">系統設定</h3>
             <div class="mb-4">
-                <label class="block text-xs font-bold text-gray-500 mb-1">Gemini API Key</label>
-                <input type="password" id="custom-api-key" class="w-full p-2 border rounded focus:border-[#78350f] outline-none" placeholder="貼上您的 API Key">
+                <label class="block text-xs font-bold text-gray-500 mb-1">倪師知識庫通行密語</label>
+                <input type="password" id="custom-api-key" class="w-full p-2 border rounded focus:border-[#78350f] outline-none" placeholder="貼上通行密語（在 Mac 執行 cat ~/.rag_token 取得）">
                 <p id="fixed-key-msg" class="text-[10px] text-green-600 mt-1 hidden"><i class="fa-solid fa-lock"></i> 已偵測到程式碼內建金鑰，可略過此步驟。</p>
             </div>
             <div class="flex justify-end gap-2">
@@ -565,7 +599,8 @@
                 document.getElementById('custom-api-key').value = "(已使用程式碼內建金鑰)";
                 document.getElementById('custom-api-key').disabled = true;
             } else {
-                const savedKey = localStorage.getItem('gemini_api_key');
+                // 欄位標示的是通行密語，就從密語那格取（金鑰那格留給語音，不在此頁使用）
+                const savedKey = localStorage.getItem('ni_access_token');
                 if(savedKey) {
                     userApiKey = savedKey;
                     document.getElementById('custom-api-key').value = savedKey;
@@ -606,7 +641,10 @@
             }
             const k = document.getElementById('custom-api-key').value.trim();
             if(k) { 
-                localStorage.setItem('gemini_api_key', k); 
+                /* 依內容分流：AIza…/AQ.… 是 Google 金鑰（語音用），其餘視為通行密語（後端用）。
+                   使用者不必分辨自己填的是哪一種。 */
+                if (/^AIza/.test(k) || /^AQ\./.test(k)) localStorage.setItem('gemini_api_key', k);
+                else localStorage.setItem('ni_access_token', k);
                 userApiKey = k; 
                 updateApiStatus(true); 
                 if(event && event.target) {
@@ -967,7 +1005,7 @@
                 }
 
                 // 改走本地 RAG 伺服器：限定倪海廈中醫新庫(domain=tcm) + gemini-3.5-flash
-                const url = `http://127.0.0.1:8765/gemini?domain=tcm&key=${keyToUse}`;
+                const url = `http://127.0.0.1:8765/gemini?domain=tcm&key=${encodeURIComponent(window.__NI_TOKEN__())}`;
                 const body = JSON.stringify({ contents: [{ parts }], generationConfig: { responseMimeType: "application/json" } });
 
                 // 逾時上限：v66 的辨證要生成完整處方＋內經機轉，加上後端遇 Gemini 限流會

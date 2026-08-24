@@ -27,6 +27,40 @@
     }
     return _fetch(u, o);
   };
+  /* 通行密語與 Gemini 金鑰分開存。
+     後端 /gemini 驗的是密語，ziwei 的語音朗讀打 Google 用的才是金鑰；
+     兩者原本擠在 localStorage['gemini_api_key'] 同一格，填哪個都會弄壞另一邊。 */
+  var TOKEN_KEY = 'ni_access_token';
+  try {
+    /* 一次性設定連結 …#k=<密語>：存好就把片段從網址抹掉，不留在瀏覽紀錄裡。
+       片段不會送到伺服器，也不會進 repo，手機端不必手打 24 個字。 */
+    var m = location.hash.match(/[#&]k=([^&]+)/);
+    if (m) {
+      localStorage.setItem(TOKEN_KEY, decodeURIComponent(m[1]));
+      history.replaceState(null, '', location.pathname + location.search);
+    }
+    /* 舊裝置這格存的是 Google 金鑰（AIza… / AQ.…），拿去當密語必被擋成 403。
+       不刪掉——語音朗讀還要用——只是不再誤當密語。 */
+    if (!localStorage.getItem(TOKEN_KEY)) {
+      var legacy = localStorage.getItem('gemini_api_key') || '';
+      if (legacy && !/^AIza/.test(legacy) && !/^AQ\./.test(legacy)) {
+        localStorage.setItem(TOKEN_KEY, legacy);
+      }
+    }
+  } catch (e) {}
+  /* 頁面已經開著時點設定連結，瀏覽器只做同文件導覽、上面那段不會重跑。
+     手機上這是常態（連結多半在已開的分頁裡打開），所以補這個。 */
+  window.addEventListener('hashchange', function () {
+    var mm = location.hash.match(/[#&]k=([^&]+)/);
+    if (!mm) return;
+    try {
+      localStorage.setItem(TOKEN_KEY, decodeURIComponent(mm[1]));
+      history.replaceState(null, '', location.pathname + location.search);
+    } catch (e) {}
+  });
+  window.__NI_TOKEN__ = function () {
+    try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; }
+  };
   window.__NI_BACKEND_READY__ = ready.then(function(){ return base; });
 })();
 </script>
@@ -714,10 +748,15 @@ function ZiweiYiDivine() {
   const lastWarnedSignature = useRef("");
   const LOCAL_STORAGE_KEY = 'ziwei_records_v1';
   useEffect(() => {
+    // userApiKey 是真的 Google 金鑰，只給語音朗讀用；
+    // 設定欄現在標示「通行密語」，顯示的就該是密語那格。
     const storedKey = localStorage.getItem("gemini_api_key");
     if (storedKey) {
       setUserApiKey(storedKey);
-      setTempApiKey(storedKey);
+    }
+    const storedTok = localStorage.getItem("ni_access_token");
+    if (storedTok) {
+      setTempApiKey(storedTok);
     }
     loadLocalRecords();
 
@@ -762,7 +801,11 @@ function ZiweiYiDivine() {
     }
   };
   const saveSettings = () => {
-    localStorage.setItem("gemini_api_key", tempApiKey.trim());
+    {
+      const _k = tempApiKey.trim();
+      /* 依內容分流，理由同 jingfang：金鑰給語音、密語給後端 */
+      if (/^AIza/.test(_k) || /^AQ\./.test(_k)) localStorage.setItem("gemini_api_key", _k);else localStorage.setItem("ni_access_token", _k);
+    }
     setUserApiKey(tempApiKey.trim());
     setIsSettingsOpen(false);
     setChatHistory(prev => [...prev, {
@@ -1222,7 +1265,7 @@ function ZiweiYiDivine() {
       let divRes = parentMsg.divination || calculateHexagram();
       // 互動回饋屬於追問，isFollowUp 傳入 true，並且強制阻斷急災提示 (includeDisaster = false)
       const prompt = generatePrompt(combinedContext, divRes, chart, true, !!hexImageSrc(divRes.id), null, false, parentMsg.inquiryTime, false);
-      const response = await fetchWithRetry(`http://127.0.0.1:8765/gemini?key=${userApiKey}`, {
+      const response = await fetchWithRetry(`http://127.0.0.1:8765/gemini?key=${encodeURIComponent(window.__NI_TOKEN__())}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -1558,7 +1601,7 @@ ${showDisaster ? `## 第一步：【流年警訊提醒】(Critical)
       if (includeDisaster && activeChart.alertFlags && activeChart.alertFlags.length > 0 && !isFollowUpAction) {
         lastWarnedSignature.current = currentSignature;
       }
-      const response = await fetchWithRetry(`http://127.0.0.1:8765/gemini?key=${userApiKey}`, {
+      const response = await fetchWithRetry(`http://127.0.0.1:8765/gemini?key=${encodeURIComponent(window.__NI_TOKEN__())}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -1605,7 +1648,7 @@ ${showDisaster ? `## 第一步：【流年警訊提醒】(Critical)
     const divRes = calculateHexagram();
     const prompt = `你是精通梅花易數的命理顧問（**不自稱倪海廈或任何真實人物**）。根據卦象：本卦${divRes.ben.name}、變卦${divRes.zhi.name}、體用斷語「${divRes.tiYong.judgement}」，與流年${chart.liunian.year}，生成JSON錦囊：{ "luckyColor": "string", "luckyDirection": "string", "advice": "string", "warning": "string" }。吉色宜取體卦五行(${divRes.tiYong.tiElement})之生扶之色。只回傳JSON。`;
     try {
-      const res = await fetchWithRetry(`http://127.0.0.1:8765/gemini?key=${userApiKey}`, {
+      const res = await fetchWithRetry(`http://127.0.0.1:8765/gemini?key=${encodeURIComponent(window.__NI_TOKEN__())}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -1649,7 +1692,7 @@ ${showDisaster ? `## 第一步：【流年警訊提醒】(Critical)
               飲食限於**一般超市買得到的日常食材**，不列藥膳、不列中藥材、不開藥方；
               穴位限於可自行按壓的保健穴，不涉針刺與劑量。`;
     try {
-      const res = await fetchWithRetry(`http://127.0.0.1:8765/gemini?key=${userApiKey}`, {
+      const res = await fetchWithRetry(`http://127.0.0.1:8765/gemini?key=${encodeURIComponent(window.__NI_TOKEN__())}`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -1766,7 +1809,7 @@ ${showDisaster ? `## 第一步：【流年警訊提醒】(Critical)
     type: "password",
     value: tempApiKey,
     onChange: e => setTempApiKey(e.target.value),
-    placeholder: "\u8CBC\u4E0A\u60A8\u7684 API Key (AIza...)",
+    placeholder: "\u8CBC\u4E0A\u901A\u884C\u5BC6\u8A9E",
     className: "w-full pl-9 pr-3 py-2 border border-stone-300 rounded focus:border-amber-600 outline-none text-sm"
   })), /*#__PURE__*/React.createElement("p", {
     className: "text-[10px] text-stone-500 mt-1"
