@@ -576,43 +576,43 @@ const fetchWithRetry = async (url, options, maxRetries = 2) => {
   }
 };
 
-// 正宗梅花易數「年月日時起卦」（農曆）：年支數+月+日 起上卦，加時辰數起下卦，總數取動爻。
+// 梅花易數「時刻起卦」：分起上卦、秒起下卦、時分秒之和取動爻。
 //
-// 2026-08-21 修正：原本把「問事字數」加進這條算式當外應。那既非時間起卦、
-// 也非字數起卦，而是兩法相加；且上下卦皆以八除取餘，字數每加八就回到同一卦——
-// 同一時辰內本卦只剩八種可能，連問數題必然一直撞到同幾個卦。
-// 現改回純時間起卦：**一個時辰一個卦，與問句無關**。要問第二件事，隔時辰再起。
-// questionText 仍收下供記錄，但不參與起卦。
+// 2026-08-26 改：原本是「年月日時起卦」，一個時辰一個卦——同一時辰內不論誰問、
+// 問什麼都得同一卦，連問兩題必然撞卦。8/21 那次只拿掉「問句字數」這個外應，
+// 沒解決撞卦；而年月日時起卦本就**僅適用自問自占**，拿來服務不特定多人是誤用。
+//
+// 時刻起卦：分、秒各自獨立跑 0–59，上下卦互不牽制，六十四卦全備，解析度到秒。
+// **時(hour) 不入上下卦**——它在一小時內固定，拿它起卦會把該卦鎖死，
+// 同一小時只剩八種本卦，與舊法犯同一個錯——故只併入動爻，三者都用上而不牽制。
+// 上下卦的分派沿用古法結構「細者、後到者入下卦」：分(粗)為上卦、秒(細)為下卦。
+//
+// **此為依「取當下之數」原則所作的現代延伸，非古籍明文，不可假託為邵子原法。**
+// 仍是決定性起卦（非亂數）：起卦時刻記在 timestamp / method 字串裡，
+// 任何人依此複算必得同一卦。與 skill 引擎 meihua-engine.js 的 castByClock 同一條算式。
+// questionText 仍收下供記錄，不參與起卦。
 const calculateHexagram = (forceId = null, questionText = "") => {
   const now = new Date();
   let fullGanZhi = "";
   let gregorianTime = "";
-  let yearNum, monthNum, dayNum;
-  const hourNum = getZhiIndexFromHour(now.getHours()) + 1; // 子1…亥12
   if (window.Solar && window.Lunar) {
     try {
       let solarNow = window.Solar.fromDate(now);
       if (now.getHours() >= 23) solarNow = solarNow.next(1); // 晚子時屬次日（倪師法）
       const lunarNow = solarNow.getLunar();
       fullGanZhi = `${lunarNow.getYearInGanZhi()}年 ${lunarNow.getMonthInGanZhi()}月 ${lunarNow.getDayInGanZhi()}日 ${lunarNow.getTimeInGanZhi()}時`;
+      // 秒也顯示出來：時刻起卦以分秒定卦，沒有秒就無從複驗。
       gregorianTime = now.toLocaleString('zh-TW', {
         hour12: false,
         month: 'numeric',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        second: '2-digit'
       });
-      yearNum = DI_ZHI.indexOf(lunarNow.getYearZhi()) + 1; // 子1…亥12
-      monthNum = Math.abs(lunarNow.getMonth()); // 閏月取本月數
-      dayNum = lunarNow.getDay();
     } catch (e) {
       console.error(e);
     }
-  }
-  if (yearNum === undefined) {
-    yearNum = ((now.getFullYear() - 4) % 12 + 12) % 12 + 1;
-    monthNum = now.getMonth() + 1;
-    dayNum = now.getDate();
   }
   const buildResult = (upperIdx, lowerIdx, movingLine, yingQi, method) => {
     const ben = hexFromTrigrams(upperIdx, lowerIdx);
@@ -678,13 +678,14 @@ const calculateHexagram = (forceId = null, questionText = "") => {
     }
     return buildResult(fu, fl, 0, fu + fl, "指定卦");
   }
-  const charCount = (questionText || "").replace(/\s/g, "").length; // 僅記錄，不入算式
-  const upperSum = yearNum + monthNum + dayNum;
-  const totalSum = upperSum + hourNum;
-  const upperIdx = upperSum % 8 || 8;
-  const lowerIdx = totalSum % 8 || 8;
-  const movingLine = totalSum % 6 || 6;
-  return buildResult(upperIdx, lowerIdx, movingLine, totalSum, "年月日時起卦（一時辰一卦）");
+  const hr = now.getHours(),
+    mi = now.getMinutes(),
+    se = now.getSeconds();
+  const pad = v => String(v).padStart(2, '0');
+  const upperIdx = mi % 8 || 8; // 上卦：分
+  const lowerIdx = se % 8 || 8; // 下卦：秒
+  const movingLine = (hr + mi + se) % 6 || 6; // 動爻：時分秒之和
+  return buildResult(upperIdx, lowerIdx, movingLine, hr + mi + se, `時刻起卦（${pad(hr)}時${pad(mi)}分${pad(se)}秒｜分起上卦、秒起下卦、時分秒和取動爻）`);
 };
 function ZiweiYiDivine() {
   const [birthYear, setBirthYear] = useState('1984');
