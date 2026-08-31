@@ -1,0 +1,1263 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>玄空星卦合參 · 現場採集</title>
+<style>
+:root{
+  --bg:#F7F5F0; --surface:#FFF; --surface-2:#F1EEE7; --field:#FBFAF7;
+  --ink:#22201C; --ink-2:#4A463E; --muted:#6E6A60;
+  --rule:#E2DED4; --rule-2:#D2CCBE;
+  --accent:#8C6D3F; --accent-soft:#F0E7D6;
+  --ok:#4F6B45; --warn:#B07A2E; --bad:#A8443A;
+  --mu:#4F7A4A; --huo:#A8443A; --tu:#8A6B3C; --jin:#7C7C84; --shui:#3E5A78;
+  --sans:"PingFang TC","Heiti TC","Microsoft JhengHei",system-ui,sans-serif;
+  --serif:"Songti TC","STSong","SimSun",Georgia,serif;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#161513; --surface:#1E1D1A; --surface-2:#25231F; --field:#232120;
+  --ink:#EDEAE3; --ink-2:#C6C1B6; --muted:#948F84;
+  --rule:#302E29; --rule-2:#3D3A33;
+  --accent:#C9A468; --accent-soft:#2B2519;
+  --ok:#8FB183; --warn:#D9AE6A; --bad:#D98177;
+  --mu:#84B07D; --huo:#D98177; --tu:#C2A06A; --jin:#AFAFB8; --shui:#7FA0C0;
+}}
+:root[data-theme="dark"]{
+  --bg:#161513; --surface:#1E1D1A; --surface-2:#25231F; --field:#232120;
+  --ink:#EDEAE3; --ink-2:#C6C1B6; --muted:#948F84;
+  --rule:#302E29; --rule-2:#3D3A33; --accent:#C9A468; --accent-soft:#2B2519;
+  --ok:#8FB183; --warn:#D9AE6A; --bad:#D98177;
+  --mu:#84B07D; --huo:#D98177; --tu:#C2A06A; --jin:#AFAFB8; --shui:#7FA0C0;
+}
+:root[data-theme="light"]{
+  --bg:#F7F5F0; --surface:#FFF; --surface-2:#F1EEE7; --field:#FBFAF7;
+  --ink:#22201C; --ink-2:#4A463E; --muted:#6E6A60;
+  --rule:#E2DED4; --rule-2:#D2CCBE; --accent:#8C6D3F; --accent-soft:#F0E7D6;
+  --ok:#4F6B45; --warn:#B07A2E; --bad:#A8443A;
+  --mu:#4F7A4A; --huo:#A8443A; --tu:#8A6B3C; --jin:#7C7C84; --shui:#3E5A78;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);
+  font-size:16px;line-height:1.7;-webkit-text-size-adjust:100%}
+.wrap{max-width:34rem;margin:0 auto;padding:0 .9rem 4rem}
+header{padding:1.5rem 0 .9rem;border-bottom:1px solid var(--rule)}
+.eyebrow{font-size:.68rem;letter-spacing:.24em;color:var(--accent);font-weight:700}
+h1{font-family:var(--serif);font-size:1.4rem;margin:.35rem 0 0;font-weight:600}
+h2{font-size:.72rem;letter-spacing:.18em;color:var(--accent);font-weight:700;
+  margin:1.9rem 0 .6rem}
+label{display:block;font-size:.74rem;color:var(--muted);margin:0 0 .25rem;
+  letter-spacing:.04em}
+input,select,textarea{width:100%;padding:.55rem .65rem;font:inherit;font-size:1rem;
+  color:var(--ink);background:var(--field);border:1px solid var(--rule-2);
+  border-radius:3px;font-variant-numeric:tabular-nums}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:1px}
+.row{display:flex;gap:.5rem}.row>*{flex:1}
+.deg{display:flex;gap:.4rem;align-items:stretch}
+.deg input{flex:1;font-size:1.5rem;font-weight:700;text-align:center}
+.deg button{flex:0 0 3rem;font-size:1.1rem;font-weight:700;background:var(--surface-2);
+  border:1px solid var(--rule-2);border-radius:3px;color:var(--ink);cursor:pointer}
+.deg button:active{background:var(--accent-soft)}
+.seg{display:flex;gap:2px;background:var(--rule-2);border:1px solid var(--rule-2);
+  border-radius:3px;overflow:hidden}
+.seg button{flex:1;padding:.45rem;font:inherit;font-size:.86rem;border:0;cursor:pointer;
+  background:var(--surface);color:var(--muted)}
+.seg button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent);font-weight:700}
+
+/* 盤 */
+.head{background:var(--surface);border:1px solid var(--rule);border-radius:4px;
+  padding:.8rem .9rem;margin:1rem 0 .8rem}
+.head .big{font-family:var(--serif);font-size:1.35rem;font-weight:600;line-height:1.3}
+.chips{display:flex;flex-wrap:wrap;gap:.35rem;margin-top:.5rem}
+.chip{padding:.2rem .55rem;border-radius:2px;font-size:.76rem;font-weight:600;
+  background:var(--surface-2);color:var(--ink-2);border:1px solid var(--rule)}
+.chip.ok{color:var(--ok);border-color:currentColor;background:transparent}
+.chip.warn{color:var(--warn);border-color:currentColor;background:transparent}
+.chip.bad{color:var(--bad);border-color:currentColor;background:transparent}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:var(--rule-2);
+  border:2px solid var(--ink);padding:2px;margin:.3rem 0}
+.cell{background:var(--surface);aspect-ratio:1;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:.05rem;padding:.2rem;position:relative}
+.cell[data-role]{background:var(--accent-soft)}
+.cell[data-role]::after{content:attr(data-role);position:absolute;top:.2rem;right:.28rem;
+  font-size:.58rem;font-weight:700;color:var(--accent)}
+.stars{display:flex;gap:.4rem;font-variant-numeric:tabular-nums}
+.s{font-size:1.35rem;font-weight:700;line-height:1.1;border-bottom:2.5px solid currentColor}
+.s.shan{color:var(--ink)} .s.xiang{color:var(--accent)}
+.w木{border-color:var(--mu)}.w火{border-color:var(--huo)}.w土{border-color:var(--tu)}
+.w金{border-color:var(--jin)}.w水{border-color:var(--shui)}
+.yun{font-size:.68rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.gname{font-size:.6rem;color:var(--muted)}
+.rm{font-size:.62rem;color:var(--accent);font-weight:700;max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.axis{text-align:center;font-size:.66rem;letter-spacing:.3em;color:var(--muted)}
+.ew{display:flex;justify-content:space-between;font-size:.66rem;
+  letter-spacing:.2em;color:var(--muted);margin:.15rem .1rem}
+
+dl{display:grid;grid-template-columns:auto 1fr;gap:0 .8rem;margin:.6rem 0;font-size:.86rem}
+dt{color:var(--muted);white-space:nowrap;padding:.3rem 0;border-bottom:1px solid var(--rule)}
+dd{margin:0;padding:.3rem 0;border-bottom:1px solid var(--rule);
+  font-variant-numeric:tabular-nums}
+.note{font-size:.8rem;padding:.5rem .7rem;border-left:3px solid var(--accent);
+  background:var(--surface-2);margin:.6rem 0;border-radius:0 3px 3px 0}
+.note.warn{border-color:var(--warn)} .note.bad{border-color:var(--bad);color:var(--bad)}
+
+/* 配置格 */
+.assign{display:grid;grid-template-columns:repeat(3,1fr);gap:3px}
+.assign .a{background:var(--surface);border:1px solid var(--rule);border-radius:3px;
+  padding:.4rem .35rem}
+.assign .a b{display:block;font-size:.66rem;color:var(--muted);margin-bottom:.2rem}
+.assign input,.assign select{padding:.35rem;font-size:.84rem}
+.assign select{-webkit-appearance:none;appearance:none;
+  background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),
+                   linear-gradient(135deg,var(--muted) 50%,transparent 50%);
+  background-position:calc(100% - 11px) 52%,calc(100% - 7px) 52%;
+  background-size:4px 4px,4px 4px;background-repeat:no-repeat;padding-right:1.1rem}
+.assign select:invalid{color:var(--muted)}
+.quick{display:flex;flex-wrap:wrap;gap:.3rem;margin:.5rem 0 .2rem}
+.quick button{padding:.28rem .55rem;font:inherit;font-size:.76rem;cursor:pointer;
+  background:var(--surface-2);border:1px solid var(--rule-2);border-radius:99px;
+  color:var(--ink-2)}
+.quick button:active{background:var(--accent-soft);color:var(--accent)}
+.cust{display:flex;gap:2px}
+.cust input{flex:1;min-width:0}
+.cust button{flex:0 0 1.5rem;padding:0;font:inherit;font-size:.8rem;cursor:pointer;
+  background:var(--surface-2);border:1px solid var(--rule-2);border-radius:3px;
+  color:var(--muted)}
+.six{display:flex;gap:.4rem;margin:.35rem 0}
+.six input:first-child{flex:2} .six input:nth-child(2){flex:1}
+.six button{flex:0 0 2.4rem;background:var(--surface-2);border:1px solid var(--rule-2);
+  border-radius:3px;color:var(--muted);cursor:pointer;font:inherit}
+.sixlist{font-size:.82rem;margin:.4rem 0}
+.sixlist div{padding:.28rem 0;border-bottom:1px solid var(--rule);
+  display:flex;justify-content:space-between;gap:.5rem}
+.act{display:flex;gap:.5rem;margin:1.2rem 0 .5rem}
+.act button{flex:1;padding:.7rem;font:inherit;font-weight:700;border-radius:3px;
+  border:1px solid var(--accent);background:var(--accent);color:var(--bg);cursor:pointer}
+.act button.alt{background:transparent;color:var(--accent)}
+textarea{min-height:7rem;font-family:ui-monospace,Menlo,monospace;font-size:.72rem;
+  line-height:1.5}
+footer{margin-top:2rem;padding-top:1rem;border-top:1px solid var(--rule);
+  font-size:.76rem;color:var(--muted)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <div class="eyebrow">現場採集</div>
+  <h1>玄空星卦合參</h1>
+  <p style="margin:.2rem 0 0;font-size:.76rem;color:var(--muted)">現場排盤與記錄</p>
+</header>
+
+<h2>坐向</h2>
+<div class="seg" id="degmode">
+  <button type="button" data-m="xiang" aria-pressed="true">量向</button>
+  <button type="button" data-m="zuo" aria-pressed="false">量坐</button>
+</div>
+<div class="deg" style="margin-top:.5rem">
+  <button type="button" id="dm">−</button>
+  <input id="deg" type="number" step="0.1" value="121" inputmode="decimal">
+  <button type="button" id="dp">＋</button>
+</div>
+
+<h2>元運與樓層</h2>
+<div class="row">
+  <div><label for="year">建成年</label><input id="year" type="number" inputmode="numeric" placeholder="例 2026"></div>
+  <div><label for="period">或直接指定運</label>
+    <select id="period"><option value="">依年份</option>
+      <option>1</option><option>2</option><option>3</option><option>4</option><option>5</option>
+      <option>6</option><option>7</option><option>8</option><option>9</option></select></div>
+</div>
+<div class="row" style="margin-top:.5rem">
+  <div><label for="floor">樓層</label><input id="floor" type="number" inputmode="numeric" placeholder="例 4"></div>
+  <div><label for="liunian">流年</label><input id="liunian" type="number" inputmode="numeric" placeholder="例 2026"></div>
+</div>
+
+<div id="out"></div>
+
+<h2>九宮格配置</h2>
+<p style="font-size:.8rem;color:var(--muted);margin:.2rem 0 .6rem">
+  依實際格局填各宮用途。空白者不列入報告。此為配置示意，不產生面積與缺角判斷。</p>
+<div class="assign" id="assign"></div>
+
+<h2>氣口</h2>
+<p style="font-size:.8rem;color:var(--muted);margin:.2rem 0 .6rem">
+  門、窗、樓梯、電梯。<b>「門千斤，厝四兩」</b>——大門是都市陽宅最要緊的一項，
+  務必量。有外大門（社區門、院門）與內大門之分時，兩者都要量，並各自標明角色。</p>
+<div class="row">
+  <div><label for="qkname">名稱</label>
+    <input id="qkname" placeholder="如 自家大門"></div>
+  <div><label for="qkdeg">度數（起）</label>
+    <input id="qkdeg" type="number" step="0.1" inputmode="decimal" placeholder="點這裡輸入"></div>
+  <div><label for="qkdeg2">至（選填）</label>
+    <input id="qkdeg2" type="number" step="0.1" inputmode="decimal" placeholder="另一緣"></div>
+</div>
+<div class="row" style="margin-top:.5rem">
+  <div><label for="qkkind">類型</label>
+    <select id="qkkind">
+      <option>門</option><option>落地窗</option><option>窗</option>
+      <option>電梯</option><option>樓梯</option><option>陽台</option>
+      <option>固定窗</option>
+    </select></div>
+  <div><label for="qkrole">角色</label>
+    <select id="qkrole">
+      <option value="">—（一般氣口）</option>
+      <option>外大門</option><option>內大門</option>
+    </select></div>
+</div>
+<div style="display:flex;gap:.6rem;align-items:center;margin-top:.55rem">
+  <label style="display:flex;align-items:center;gap:.35rem;margin:0;font-size:.82rem;
+                color:var(--ink-2);flex:1">
+    <input type="checkbox" id="qkopen" style="width:auto;margin:0"> 常開／常走</label>
+  <button type="button" id="qkadd"
+    style="flex:0 0 auto;padding:.5rem .9rem;font:inherit;font-size:.85rem;
+           background:var(--surface-2);border:1px solid var(--rule-2);
+           border-radius:3px;color:var(--ink);cursor:pointer">＋ 加入</button>
+</div>
+<div class="quick" id="qkquick">
+  <button type="button" data-n="自家大門" data-k="門" data-r="內大門">自家大門</button>
+  <button type="button" data-n="社區大門" data-k="門" data-r="外大門">社區大門</button>
+  <button type="button" data-n="電梯" data-k="電梯">電梯</button>
+  <button type="button" data-n="樓梯" data-k="樓梯">樓梯</button>
+  <button type="button" data-n="客廳落地窗" data-k="落地窗">落地窗</button>
+  <button type="button" data-n="後陽台" data-k="陽台">後陽台</button>
+  <button type="button" data-n="對戶門" data-k="門">對戶門</button>
+</div>
+<p style="font-size:.76rem;color:var(--muted);margin:.45rem 0 0">
+  開口有寬度——自立極點照見的是一段弧，不是一個點。90cm 的門距立極 3m 就張開 17°，
+  比一個山（15°）還寬；落地窗、陽台可達三四十度。<b>兩緣都照一次填進來</b>，
+  歸宮才穩；只填一個度數時，跨宮與否全繫於那一點落在哪。</p>
+<div class="sixlist" id="qklist"></div>
+<div id="qknotes"></div>
+
+<h2>外六事（形煞類）</h2>
+<p style="font-size:.8rem;color:var(--muted);margin:.2rem 0 .6rem">
+  路沖、水口、鄰棟壁刀、電塔、變電箱等<b>形</b>上之物。門窗梯梯請填上面的「氣口」。
+  一律自<b>宅中心</b>下盤實測——由門口目測推算會錯宮，切勿如此。</p>
+<div class="six">
+  <input id="sxname" placeholder="名稱，如 樓梯下瀉">
+  <input id="sxdeg" type="number" step="0.1" inputmode="decimal" placeholder="度數">
+  <button type="button" id="sxadd">＋</button>
+</div>
+<div class="sixlist" id="sixlist"></div>
+
+<h2>基本資料</h2>
+<div class="row">
+  <div><label for="title">案名</label><input id="title" placeholder="陽宅玄空飛星分析報告"></div>
+  <div><label for="ruzhai">入宅年</label><input id="ruzhai" type="number" inputmode="numeric"></div>
+</div>
+<div style="margin-top:.5rem"><label for="addr">地址／備註</label><input id="addr"></div>
+
+<div class="act">
+  <button type="button" id="copy">複製 JSON</button>
+  <button type="button" class="alt" id="dl">下載檔案</button>
+</div>
+<textarea id="json" readonly aria-label="匯出 JSON"></textarea>
+<p class="note" id="exphint" hidden></p>
+
+<footer>
+  <p>排盤引擎與桌面版同源，已用《玄空學》（元合編輯，2006）所載 432 格盤面及 432 盤全量比對驗證。</p>
+  <p><b>坐向務必以實體羅盤實測。</b>手機磁力計室內誤差常達 10–30°，而兼向門檻僅 3°。</p>
+  <p>匯出的 JSON 交回對話即可產出完整報告；解讀與斷語由人判斷，本工具不代為生成。</p>
+</footer>
+</div>
+
+<script>
+/* 玄空飛星排盤引擎（JavaScript 移植）
+ *
+ * 這是 scripts/xuankong.py + guadu.py 的忠實移植，供現場採集 app 離線使用。
+ *
+ * ⚠ 兩套實作有分歧的風險。因此 scripts/test_engine_js.py 會把本引擎丟給 node，
+ *   用同一份《玄空學》書中資料（378 格下卦盤 + 21 條格局 + 120 格分金）覆核。
+ *   改動任一邊之後務必重跑該測試——兩邊都對得上書，才代表兩邊一致。
+ *
+ * 流派設定與 Python 版相同，均為使用者定案：
+ *   替卦口訣沈氏（武曲組含戌共六山）／起替後順逆依替星陰陽／
+ *   五入中依坐向本山陰陽／兼向門檻 ±3°／元運三元九運年界立春
+ */
+(function (root) {
+  "use strict";
+
+  const LUOSHU = { 坎:1, 坤:2, 震:3, 巽:4, 中:5, 乾:6, 兌:7, 艮:8, 離:9 };
+  const PALACE_BY_NUM = {}; for (const k in LUOSHU) PALACE_BY_NUM[LUOSHU[k]] = k;
+  const DIRECTION = { 坎:"北", 坤:"西南", 震:"東", 巽:"東南", 中:"中宮",
+                      乾:"西北", 兌:"西", 艮:"東北", 離:"南" };
+  const GRID_ROWS = [["巽","離","坤"],["震","中","兌"],["艮","坎","乾"]];
+
+  // 二十四山：名, 起始度, 卦宮, 元龍, 陰陽
+  const M = [
+    ["壬",337.5,"坎","地","陽"],["子",352.5,"坎","天","陰"],["癸",7.5,"坎","人","陰"],
+    ["丑",22.5,"艮","地","陰"], ["艮",37.5,"艮","天","陽"], ["寅",52.5,"艮","人","陽"],
+    ["甲",67.5,"震","地","陽"], ["卯",82.5,"震","天","陰"], ["乙",97.5,"震","人","陰"],
+    ["辰",112.5,"巽","地","陰"],["巽",127.5,"巽","天","陽"],["巳",142.5,"巽","人","陽"],
+    ["丙",157.5,"離","地","陽"],["午",172.5,"離","天","陰"],["丁",187.5,"離","人","陰"],
+    ["未",202.5,"坤","地","陰"],["坤",217.5,"坤","天","陽"],["申",232.5,"坤","人","陽"],
+    ["庚",247.5,"兌","地","陽"],["酉",262.5,"兌","天","陰"],["辛",277.5,"兌","人","陰"],
+    ["戌",292.5,"乾","地","陰"],["乾",307.5,"乾","天","陽"],["亥",322.5,"乾","人","陽"],
+  ].map(a => ({ name:a[0], start:a[1], palace:a[2], yuan:a[3], yy:a[4],
+                yang:a[4]==="陽", centre:(a[1]+7.5)%360 }));
+  const BY_NAME = {}; M.forEach(m => BY_NAME[m.name] = m);
+  const BY_PY = {};   M.forEach(m => BY_PY[m.palace+m.yuan] = m);
+
+  // 沈氏替卦：子癸並甲申貪狼／壬卯乙未坤巨門／乾亥辰巽巳連戌武曲／酉辛丑艮丙破軍／寅午庚丁右弼
+  const TIGUA = {};
+  [["子癸甲申",1],["壬卯乙未坤",2],["乾亥辰巽巳戌",6],["酉辛丑艮丙",7],["寅午庚丁",9]]
+    .forEach(([s,v]) => [...s].forEach(c => TIGUA[c] = v));
+
+  const STAR_NAME = {1:"一白貪狼",2:"二黑巨門",3:"三碧祿存",4:"四綠文曲",5:"五黃廉貞",
+                     6:"六白武曲",7:"七赤破軍",8:"八白左輔",9:"九紫右弼"};
+  const STAR_WX = {1:"水",2:"土",3:"木",4:"木",5:"土",6:"金",7:"金",8:"土",9:"火"};
+  const PALACE_WX = { 坎:"水",坤:"土",震:"木",巽:"木",中:"土",乾:"金",兌:"金",艮:"土",離:"火" };
+  const HETU_WX = {1:"水",6:"水",2:"火",7:"火",3:"木",8:"木",4:"金",9:"金",5:"土",10:"土"};
+
+  const norm = d => ((d % 360) + 360) % 360;
+
+  function mountainOf(deg) {
+    const d = norm(deg);
+    for (const m of M) {
+      const hi = m.start + 15;
+      if (hi <= 360) { if (d >= m.start && d < hi) return m; }
+      else if (d >= m.start || d < hi - 360) return m;
+    }
+    throw new Error("度數無法定位：" + deg);
+  }
+  const offsetFromCentre = (deg, m) => Math.round((((norm(deg) - m.centre + 180) % 360) - 180) * 1e4) / 1e4;
+
+  /** 依洛書路線飛佈：中→乾→兌→艮→離→坎→坤→震→巽 */
+  function fly(centre, forward) {
+    const out = {};
+    for (const p in LUOSHU) {
+      const off = ((LUOSHU[p] - 5) % 9 + 9) % 9;
+      const step = forward ? off : -off;
+      out[p] = ((centre - 1 + step) % 9 + 9) % 9 + 1;
+    }
+    return out;
+  }
+
+  const PERIOD_BASE = 1864;
+  function lichunDay(y) {
+    const yy = y % 100, c = y < 2000 ? 4.6295 : 3.87;
+    return Math.floor(yy * 0.2422 + c) - Math.floor((yy - 1) / 4);
+  }
+  function periodOfYear(year, month, day) {
+    let eff = year;
+    if (month) { const ld = lichunDay(year);
+      if (month < 2 || (month === 2 && (day || 1) < ld)) eff = year - 1; }
+    return { period: (Math.floor((eff - PERIOD_BASE) / 20) % 9 + 9) % 9 + 1, effYear: eff };
+  }
+  const periodYears = p => { const s = PERIOD_BASE + (p - 1) * 20; return [s, s + 19]; };
+  const yearZibai = y => (((2026 - y) % 9) + 9) % 9 + 1;
+
+  /** 求某山之入中星與順逆。五入中無本卦，依坐向本山陰陽（已對書中盤面驗證）。 */
+  function deriveCentre(role, mt, periodPlate, mode, cfg) {
+    const a = periodPlate[mt.palace];
+    let basis, note = "";
+    if (a === 5) { basis = mt; note = "運星五黃無本卦，依坐向本山陰陽定順逆"; }
+    else basis = BY_PY[PALACE_BY_NUM[a] + mt.yuan];
+
+    let centre, forward, src;
+    if (mode === "替卦") {
+      centre = TIGUA[basis.name];
+      if (centre === a) note = (note ? note + "；" : "") + `替星與下卦同數（${basis.name}山無替可尋）`;
+      src = (cfg.tiBasis === "替星" && centre !== 5)
+            ? BY_PY[PALACE_BY_NUM[centre] + mt.yuan] : basis;
+      forward = src.yang;
+    } else { centre = a; src = basis; forward = basis.yang; }
+    return { role, mountain:mt.name, palace:mt.palace, period_star:a,
+             basis_mountain:src.name, basis_yinyang:src.yy,
+             center_star:centre, forward, mode, note };
+  }
+
+  function judgeGeju(period, zp, xp, shan, xiang) {
+    const w = period;
+    const sz = shan[zp]===w, sx = shan[xp]===w, xx = xiang[xp]===w, xz = xiang[zp]===w;
+    let name, desc;
+    if (sz && xx) { name="旺山旺向"; desc="到山到向，丁財兩旺之局"; }
+    else if (sx && xz) { name="上山下水"; desc="旺山星到向、旺向星到坐，損丁破財之局"; }
+    else if (sx && xx) { name="雙星到向"; desc="山向兩旺星俱到向首，利財而丁需向上有山或後天補救"; }
+    else if (sz && xz) { name="雙星到坐"; desc="山向兩旺星俱到坐山，利丁而財需坐後有水或後天補救"; }
+    else { const loc=[]; if(shan["中"]===w) loc.push("山星旺星入中");
+           if(xiang["中"]===w) loc.push("向星旺星入中");
+           name="其他"; desc="旺星未落坐向"+(loc.length?`（${loc.join("、")}）`:""); }
+    // 鍵名一律用中文，與 Python 版一致——匯出的 JSON 要能直接餵給報告產生器
+    return { 名稱:name, 說明:desc, 旺星:w, 坐山山星:shan[zp], 坐山向星:xiang[zp],
+             向首山星:shan[xp], 向首向星:xiang[xp] };
+  }
+
+  function judgeFuyin(shan, xiang, periodPlate) {
+    const full = [], per = {};
+    const yd = {}; for (const p in LUOSHU) yd[p] = LUOSHU[p];
+    [["山盤",shan],["向盤",xiang]].forEach(([lab, pl]) => {
+      const all = f => Object.keys(LUOSHU).every(f);
+      if (all(p => pl[p] === yd[p])) full.push(`${lab}全盤伏吟（與元旦盤同）`);
+      if (all(p => pl[p] + yd[p] === 10)) full.push(`${lab}全盤反吟（與元旦盤對沖）`);
+      if (all(p => pl[p] === periodPlate[p])) full.push(`${lab}全盤伏吟（與運盤同）`);
+    });
+    for (const p in LUOSHU) {
+      const m = [];
+      [["山星",shan],["向星",xiang]].forEach(([lab, pl]) => {
+        if (pl[p] === periodPlate[p]) m.push(`${lab}伏吟運盤`);
+        else if (pl[p] === yd[p]) m.push(`${lab}伏吟元旦盤`);
+      });
+      if (m.length) per[p] = m;
+    }
+    return { 全盤: full, 逐宮: per };
+  }
+
+  const ADJ = { 坎:["乾","艮"], 艮:["坎","震"], 震:["艮","巽"], 巽:["震","離"],
+                離:["巽","坤"], 坤:["離","兌"], 兌:["坤","乾"], 乾:["兌","坎"] };
+  const HETU_PAIR = new Set(["1-6","6-1","2-7","7-2","3-8","8-3","4-9","9-4"]);
+
+  function judgeChengmen(period, xm, periodPlate) {
+    const res = [], xp = xm.palace;
+    if (!ADJ[xp]) return res;
+    for (const adj of ADJ[xp]) {
+      const a = periodPlate[adj];
+      const basis = a === 5 ? BY_PY[adj + xm.yuan] : BY_PY[PALACE_BY_NUM[a] + xm.yuan];
+      const star = fly(a, basis.yang)[adj];
+      res.push({ 宮位:adj, 方位:DIRECTION[adj],
+                 類別: HETU_PAIR.has(`${LUOSHU[xp]}-${LUOSHU[adj]}`) ? "正城門" : "副城門",
+                 旁宮運星:a, 取用山:basis.name, 陰陽:basis.yy,
+                 飛回本宮之星:star, 可用: star === period });
+    }
+    return res;
+  }
+
+  const SANBAN = [[1,4,7],[2,5,8],[3,6,9]].map(a => a.join(","));
+  const JIEJIE = { "上元（離震乾）":["離","震","乾"], "下元（坎兌巽）":["坎","兌","巽"] };
+  function judgeDajie(xp, xiang, geju) {
+    const wang = geju === "旺山旺向" || geju === "雙星到向";
+    const found = [];
+    for (const lab in JIEJIE) {
+      const g = JIEJIE[lab], s = g.map(p => xiang[p]);
+      const uniq = [...new Set(s)].sort((a,b)=>a-b);
+      if (uniq.length === 3 && SANBAN.includes(uniq.join(","))) {
+        const cond = { 三般卦成立:true, 向首在組內:g.includes(xp), 旺星到向:wang };
+        const miss = Object.keys(cond).filter(k => !cond[k]);
+        found.push({ 組別:lab, 宮位:g, 向星:s, 條件:cond,
+          判定: miss.length ? `數理條件不全（缺：${miss.join("、")}），不宜作真打劫論`
+                            : "三項條件俱足，數理上合真打劫；仍須現場覆核巒頭" });
+      }
+    }
+    return { 三般卦成立: found.length > 0, 旺星到向: wang, 細節: found };
+  }
+
+  function judgeSanban(pp, shan, xiang) {
+    const all = Object.keys(LUOSHU).every(p => {
+      const u = [...new Set([pp[p], shan[p], xiang[p]])].sort((a,b)=>a-b);
+      return u.length === 3 && SANBAN.includes(u.join(","));
+    });
+    return { 全盤父母三般卦: all,
+      山盤與運盤合十: Object.keys(LUOSHU).every(p => shan[p] + pp[p] === 10),
+      向盤與運盤合十: Object.keys(LUOSHU).every(p => xiang[p] + pp[p] === 10) };
+  }
+
+  function judgeRuqiu(period, shan, xiang) {
+    const out = {};
+    [["向星",xiang],["山星",shan]].forEach(([lab, pl]) => {
+      const m = pl["中"]; let [s, e] = periodYears(m);
+      while (e < periodYears(period)[0]) { s += 180; e += 180; }
+      out[lab] = { 中宮星:m, 入囚之運:m, 入囚年段:`${s}–${e}`, 本運即囚: m === period };
+    });
+    return out;
+  }
+
+  /* ---- 三元卦度分金：伏羲六十四卦圓圖 ---- */
+  const XIANTIAN = ("乾 夬 大有 大壯 小畜 需 大畜 泰 履 兌 睽 歸妹 中孚 節 損 臨 " +
+    "同人 革 離 豐 家人 既濟 賁 明夷 無妄 隨 噬嗑 震 益 屯 頤 復 " +
+    "姤 大過 鼎 恒 巽 井 蠱 升 訟 困 未濟 解 渙 坎 蒙 師 " +
+    "遯 咸 旅 小過 漸 蹇 艮 謙 否 萃 晉 豫 觀 比 剝 坤").split(/\s+/);
+  // 圓圖兩半反向：東半自復倒走至乾，西半自姤順走至坤；復起正北 0°、姤起正南 180°
+  const RING = [];
+  for (let i = 0; i < 32; i++) RING.push(XIANTIAN[31 - i]);
+  for (let i = 0; i < 32; i++) RING.push(XIANTIAN[32 + i]);
+  const GUA_W = 360 / 64;
+  const FJ_BRANCH = { 亥:"亥",壬:"亥",子:"子",癸:"子",丑:"丑",艮:"丑",寅:"寅",甲:"寅",
+    卯:"卯",乙:"卯",辰:"辰",巽:"辰",巳:"巳",丙:"巳",午:"午",丁:"午",
+    未:"未",坤:"未",申:"申",庚:"申",酉:"酉",辛:"酉",戌:"戌",乾:"戌" };
+  const YANG_BR = new Set(["子","寅","辰","午","申","戌"]);
+  const ERRATA = {
+    "亥辛亥":["晉·觀","書上印「晉·觀」。觀卦起於 337.5°、整段在壬山，亥山碰不到；此處幾何為豫卦。全書六十四卦僅見 63 個、唯缺豫。"],
+    "亥癸亥":["觀","同上，此格整段落在豫卦之內。"],
+    "辰戊辰":["歸妹·睽","書上多標歸妹；此分金起於 118.5°，已過卦界 0.375°，實為純睽。"],
+    "戌甲戌":["小過·漸","書上多標小過；此分金起於 292.5°，恰為卦界，實為純漸。"],
+    "戌戊戌":["漸·蹇","書上多標漸；此分金起於 298.5°，已過卦界 0.375°，實為純蹇。"],
+  };
+  function locate(deg) {
+    const d = norm(deg), m = mountainOf(d);
+    const idx = Math.floor(d / GUA_W), lo = idx * GUA_W, hi = lo + GUA_W;
+    const fjIdx = Math.min(4, Math.floor(((d - m.start) % 360 + 360) % 360 / 3));
+    const br = FJ_BRANCH[m.name];
+    const stems = YANG_BR.has(br) ? ["甲","丙","戊","庚","壬"] : ["乙","丁","己","辛","癸"];
+    const fj = stems[fjIdx] + br;
+    const r = { 度數: Math.round(d*100)/100, 山:m.name, 分金:fj, 分金序:fjIdx+1,
+      卦: RING[idx], 卦區間:[Math.round(lo*1e3)/1e3, Math.round((hi%360)*1e3)/1e3],
+      距前界: Math.round((d-lo)*1e3)/1e3, 距後界: Math.round((hi-d)*1e3)/1e3 };
+    r.臨界 = Math.min(r.距前界, r.距後界) < 0.5;
+    const e = ERRATA[m.name + fj]; if (e) { r.書載 = e[0]; r.與書差異 = e[1]; }
+    return r;
+  }
+
+  const DEFAULT_CFG = { jian: 3.0, tiBasis: "替星" };
+
+  /** 排盤主函式。opts: {period|year, xiangDeg|zuoDeg|zuo, liunian, mode, cfg} */
+  function paipan(opts) {
+    const cfg = Object.assign({}, DEFAULT_CFG, opts.cfg || {});
+    let zuoDeg = opts.zuoDeg;
+    if (zuoDeg == null && opts.xiangDeg != null) zuoDeg = norm(opts.xiangDeg + 180);
+    let zm, offset, measured;
+    if (zuoDeg != null) {
+      zm = mountainOf(zuoDeg); offset = offsetFromCentre(zuoDeg, zm);
+      measured = { 坐度: Math.round(norm(zuoDeg)*100)/100,
+                   向度: Math.round(norm(zuoDeg+180)*100)/100, 偏離中線: offset };
+    } else {
+      zm = BY_NAME[opts.zuo]; offset = 0;
+      measured = { 坐度: zm.centre, 向度: norm(zm.centre+180), 偏離中線: 0,
+                   備註: "未給實測度數，以山中線正向計算" };
+    }
+    const xm = M[(M.indexOf(zm) + 12) % 24];
+    let period = opts.period, periodNote = null;
+    if (!period && opts.year) {
+      const r = periodOfYear(opts.year, opts.month, opts.day);
+      period = r.period;
+      periodNote = `建成 ${opts.year} 年 → ${"〇一二三四五六七八九"[period]}運`
+                 + (r.effYear !== opts.year ? `（未過立春，作 ${r.effYear} 年論）` : "");
+    }
+    const mode = opts.mode || (Math.abs(offset) > cfg.jian ? "替卦" : "下卦");
+
+    const pp = fly(period, true);
+    const sd = deriveCentre("山", zm, pp, mode, cfg);
+    const xd = deriveCentre("向", xm, pp, mode, cfg);
+    const shan = fly(sd.center_star, sd.forward), xiang = fly(xd.center_star, xd.forward);
+    const geju = judgeGeju(period, zm.palace, xm.palace, shan, xiang);
+
+    const idx = M.indexOf(zm);
+    const nb = offset > 0 ? M[(idx+1)%24] : M[(idx-1+24)%24];
+    const jian = Math.abs(offset) <= cfg.jian
+      ? { 是否兼向:false, 偏離:offset,
+          描述:`${zm.name}山正向（偏離中線 ${offset>=0?"+":""}${offset.toFixed(2)}°，未逾 ${cfg.jian}° 門檻），走下卦` }
+      : { 是否兼向:true, 偏離:offset, 兼向:nb.name, 出卦: nb.palace !== zm.palace,
+          描述:`${zm.name}山兼${nb.name} ${Math.abs(offset).toFixed(2)}°，逾 ${cfg.jian}° 起替卦`,
+          出卦警示: nb.palace !== zm.palace
+            ? `${zm.name}山與${nb.name}山分屬${zm.palace}、${nb.palace}兩卦，已犯出卦（差錯空亡）` : undefined };
+
+    const 九宮 = {};
+    for (const p in LUOSHU) 九宮[p] = {
+      方位:DIRECTION[p], 運星:pp[p], 山星:shan[p], 向星:xiang[p], 宮位五行:PALACE_WX[p],
+      星曜:{ 運:STAR_NAME[pp[p]], 山:STAR_NAME[shan[p]], 向:STAR_NAME[xiang[p]] },
+      組合:`${shan[p]}${xiang[p]}`,
+      角色:[p===zm.palace?"坐山":null, p===xm.palace?"向首":null].filter(Boolean),
+      當運:{ 山星當旺: shan[p]===period, 向星當旺: xiang[p]===period } };
+
+    const out = {
+      元運:period, 元運年段: periodYears(period).join("–"),
+      坐山:zm.name, 向首:xm.name, 坐向:`${zm.name}山${xm.name}向`,
+      坐山方位:DIRECTION[zm.palace], 向首方位:DIRECTION[xm.palace],
+      坐山卦宮:zm.palace, 向首卦宮:xm.palace, 元龍:zm.yuan,
+      實測:measured, 卦例:mode, 兼向:jian,
+      運盤:pp, 山盤:shan, 向盤:xiang,
+      入中推導:{ 山盤:sd, 向盤:xd }, 格局:geju,
+      伏吟反吟: judgeFuyin(shan, xiang, pp),
+      城門訣: judgeChengmen(period, xm, pp),
+      七星打劫: judgeDajie(xm.palace, xiang, geju.名稱),
+      三般卦與合十: judgeSanban(pp, shan, xiang),
+      令星入囚: judgeRuqiu(period, shan, xiang),
+      九宮,
+      卦度:{ 坐: locate(measured.坐度), 向: locate(measured.向度) },
+    };
+    if (periodNote) out.元運來源 = periodNote;
+    if (opts.liunian) {
+      const c = yearZibai(opts.liunian);
+      out.流年 = { 年份:opts.liunian, 中宮:c, 年盤:fly(c,true),
+                   立春:`${opts.liunian}-02-${String(lichunDay(opts.liunian)).padStart(2,"0")}` };
+    }
+    return out;
+  }
+
+  /* ---- 層間法（只做書中有明文者，見 scripts/cengjian.py 說明） ---- */
+  const SHENG = { 木:"火", 火:"土", 土:"金", 金:"水", 水:"木" };
+  const KE    = { 木:"土", 土:"水", 水:"火", 火:"金", 金:"木" };
+  function relation(me, other) {
+    if (me === other) return "比和";
+    if (SHENG[other] === me) return "恩（父）";
+    if (SHENG[me] === other) return "子";
+    if (KE[me] === other) return "財";
+    if (KE[other] === me) return "難（官）";
+    return "—";
+  }
+  function cengjian(floor, pan, ju) {
+    const eff = floor <= 10 ? floor : (floor % 10 === 0 ? 10 : floor % 10);
+    const wx = HETU_WX[eff], star = ((eff - 1) % 9) + 1;
+    const juGua = ju || pan.坐山卦宮;
+    return {
+      樓層:floor, 論層之數:eff, 層五行:wx, 層星:star, 層星名:STAR_NAME[star],
+      層星五行:STAR_WX[star], 局:juGua, 局五行:PALACE_WX[juGua],
+      層與局: relation(wx, PALACE_WX[juGua]),
+      層數自身: wx !== STAR_WX[star]
+        ? `河圖${wx}、洛書${STAR_WX[star]}，兩讀法${relation(wx, STAR_WX[star])}——紫-54「河圖剋洛書」即指此類` : null,
+      逐宮: Object.keys(LUOSHU).map(g => ({
+        宮:g, 方位:DIRECTION[g], 宮五行:PALACE_WX[g],
+        層對宮位: relation(wx, PALACE_WX[g]),
+        層對山星: relation(wx, STAR_WX[pan.九宮[g].山星]),
+        層對向星: relation(wx, STAR_WX[pan.九宮[g].向星]) })),
+    };
+  }
+
+
+  // 開口有寬度，從立極點看是一段弧，不是一個點。與 scripts/qikou.py 同構。
+  const SHAN_BY_NAME = {}; M.forEach(function(m){ SHAN_BY_NAME[m.name] = m; });
+
+  function spanFromWidth(center, widthM, distM) {
+    const half = Math.atan((widthM / 2) / distM) * 180 / Math.PI;
+    return [norm(center - half), norm(center + half)];
+  }
+
+  function shanOverlaps(lo, hi) {
+    const res = {};
+    let span = ((hi - lo) % 360 + 360) % 360; if (span === 0) span = 360;
+    let step = 0;
+    while (step < span - 1e-9) {
+      const d = norm(lo + step), m = mountainOf(d);
+      const edge = norm(m.start + 15);
+      const seg = Math.min((((edge - d) % 360 + 360) % 360) || 15, span - step);
+      res[m.name] = (res[m.name] || 0) + seg;
+      step += seg;
+    }
+    return Object.keys(res).map(function(k){ return [k, res[k]]; })
+                 .sort(function(a,b){ return b[1] - a[1]; });
+  }
+
+  function analyseSpan(lo, hi) {
+    const shans = shanOverlaps(lo, hi);
+    const total = shans.reduce(function(s,a){ return s + a[1]; }, 0);
+    const pal = {};
+    shans.forEach(function(a){ const g = SHAN_BY_NAME[a[0]].palace;
+                               pal[g] = (pal[g] || 0) + a[1]; });
+    const ordered = Object.keys(pal).map(function(k){ return [k, pal[k]]; })
+                          .sort(function(a,b){ return b[1] - a[1]; });
+    const ratio = total ? ordered[0][1] / total : 1;
+    const out = {
+      起: Math.round(lo * 100) / 100, 訖: Math.round(hi * 100) / 100,
+      張角: Math.round(total * 100) / 100,
+      涵蓋山: shans.map(function(a){ return { 山:a[0], 度數:Math.round(a[1]*100)/100,
+                                              佔比:Math.round(a[1]/total*1000)/1000 }; }),
+      涵蓋宮: ordered.map(function(a){ return { 宮:a[0], 度數:Math.round(a[1]*100)/100,
+                                               佔比:Math.round(a[1]/total*1000)/1000 }; }),
+      主歸山: shans[0][0], 主歸宮: ordered[0][0],
+      主佔比: Math.round(ratio * 1000) / 1000, 跨宮: ordered.length > 1
+    };
+    if (ordered.length > 1 && ratio < 0.6) {
+      out.主從難定 = true;
+      out.說明 = "主佔比僅 " + Math.round(ratio*100) + "%，與" + ordered[1][0]
+               + "宮接近均分，主從難以由幾何判定——須依實際納氣重心現場認定。";
+    } else if (ordered.length > 1) {
+      out.主從難定 = false;
+      out.說明 = "主佔" + ordered[0][0] + "宮 " + Math.round(ratio*100) + "%，兼及"
+               + ordered.slice(1).map(function(a){
+                   return a[0] + "宮 " + Math.round(a[1]/total*100) + "%"; }).join("、")
+               + "。以主宮論，但跨及之宮不可略而不提。";
+    } else {
+      out.主從難定 = false;
+      out.說明 = "整段皆在" + ordered[0][0] + "宮之內，歸屬明確。";
+    }
+    return out;
+  }
+
+  // ---- 氣口分析 ------------------------------------------------------------
+  // 與 scripts/qikou.py 同構，鍵名一律相同，以便交叉驗證。
+  const DONGXING = { "門":"極動", "電梯":"極動", "樓梯":"動", "窗":"動",
+                     "落地窗":"動", "陽台":"動", "冷氣":"動",
+                     "固定窗":"靜", "牆":"靜" };
+
+  function wangshuai(star, period) {
+    const d = ((star - period) % 9 + 9) % 9;
+    if (d === 0) return "當旺";
+    if (d === 1) return "生氣";
+    if (d === 2) return "次生";
+    if (d === 8) return "退氣";
+    return (d === 3 || d === 4) ? "死氣" : "煞氣";
+  }
+
+  function kaimenFa(delta, inXiang) {
+    if (inXiang && Math.abs(delta) <= 22.5) return "中門（朱雀／明堂門）";
+    if (Math.abs(delta) > 135) return "後門（玄武位）";
+    return delta < 0 ? "龍邊門（青龍位）" : "虎邊門（白虎位）";
+  }
+
+  function locateKou(deg, chart, name, kind, alwaysOpen, role, span) {
+    let sp = null, m, palace;
+    if (span) {
+      sp = analyseSpan(norm(span[0]), norm(span[1]));
+      deg = norm(span[0] + ((span[1] - span[0]) % 360 + 360) % 360 / 2);
+      m = SHAN_BY_NAME[sp.主歸山]; palace = sp.主歸宮;
+    } else {
+      deg = norm(deg); m = mountainOf(deg); palace = m.palace;
+    }
+    // 旺衰依「當運」判，不是建造之運。
+    // 2026-08-31：原本 `const period = chart.元運`，於是七運宅在九運仍以七運論——
+    // 向星 8 被標成「生氣」（實為退氣）、山星 1 被標成「死氣」（實為生氣）。
+    // 這會讓屋主以為大門收的是好氣。qikou.py 早有 --now-period，app 這邊漏了。
+    const 盤運 = chart.元運;
+    const 判運年 = chart.流年 ? chart.流年.年份 : new Date().getFullYear();
+    const period = periodOfYear(判運年).period;
+    const xiangDeg = chart.實測 ? chart.實測.向度 : null;
+    const out = {
+      名稱: name || kind, 類型: kind || "門", 度數: Math.round(deg * 100) / 100,
+      所在山: m.name, 所在宮: palace, 方位: DIRECTION[palace], 元龍: m.yuan,
+      三盤: { 運星: chart.運盤[palace], 山星: chart.山盤[palace], 向星: chart.向盤[palace] },
+      旺衰: { 運星: wangshuai(chart.運盤[palace], period),
+              山星: wangshuai(chart.山盤[palace], period),
+              向星: wangshuai(chart.向盤[palace], period) },
+      動性: DONGXING[kind] || "動", 常開: !!alwaysOpen,
+      旺衰基準: { 盤運: 盤運, 當運: period, 判運年: 判運年, 失運: period !== 盤運 },
+      在向首宮: palace === chart.向首卦宮
+    };
+    if (role) out.角色 = role;
+    if (sp) { out.涵蓋 = sp; out.定位依據 = "實量兩端，依涵蓋面積歸宮"; }
+    else out.定位依據 = "單一度數（開口有寬度，建議改量兩端）";
+    for (const cm of (chart.城門訣 || [])) {
+      if (cm.宮位 === palace) {
+        out.城門 = { 類別: cm.類別, 可用: cm.可用, 取用山: cm.取用山 };
+        break;
+      }
+    }
+    if (xiangDeg !== null && xiangDeg !== undefined) {
+      const delta = ((deg - xiangDeg + 180) % 360 + 360) % 360 - 180;
+      out.距向偏角 = Math.round(delta * 10) / 10;
+      out.開門法 = kaimenFa(delta, palace === chart.向首卦宮);
+    }
+    // 山界臨界。卦界只影響分金，山界卻決定宮位——宮一變三盤全變。
+    const lo = m.start;
+    const toLo = ((deg - lo) % 360 + 360) % 360;
+    const toHi = ((lo + 15 - deg) % 360 + 360) % 360;
+    const near = Math.min(toLo, toHi);
+    if (!sp && near <= 3) {
+      const other = mountainOf((((toLo < toHi ? lo - 0.5 : lo + 15.5)) % 360 + 360) % 360);
+      out.山界 = {
+        距界: Math.round(near * 100) / 100, 鄰山: other.name, 鄰宮: other.palace,
+        跨宮: other.palace !== palace,
+        說明: "距" + other.name + "山界僅 " + near.toFixed(1) + "°，"
+            + (other.palace !== palace
+               ? "一旦跨界即由" + palace + "宮改判" + other.palace + "宮，務必複測。"
+               : "跨界後仍在" + palace + "宮，宮位不變。")
+      };
+    }
+
+    try {
+      const g = locate(deg);
+      out.卦度 = { 卦: g.卦, 分金: g.分金, 距前界: g.距前界,
+                   距後界: g.距後界, 臨界: g.臨界 };
+    } catch (e) { /* 卦度取不到不影響定位 */ }
+    return out;
+  }
+
+
+  // 二十四山五行（干支本氣）。與宮五行不同——寅巳申亥辰戌六山不一致（佔四分之一）。
+  const SHAN_WX = {
+    "壬":"水","子":"水","癸":"水", "丑":"土","艮":"土","寅":"木",
+    "甲":"木","卯":"木","乙":"木", "辰":"土","巽":"木","巳":"火",
+    "丙":"火","午":"火","丁":"火", "未":"土","坤":"土","申":"金",
+    "庚":"金","酉":"金","辛":"金", "戌":"土","乾":"金","亥":"水" };
+  const PALACE_WX_Q = { "坎":"水","坤":"土","震":"木","巽":"木",
+                        "乾":"金","兌":"金","艮":"土","離":"火" };
+  const STAR_WX_Q = {1:"水",2:"土",3:"木",4:"木",5:"土",6:"金",7:"金",8:"土",9:"火"};
+  const _SHENG = {"木":"火","火":"土","土":"金","金":"水","水":"木"};
+  const _KE    = {"木":"土","土":"水","水":"火","火":"金","金":"木"};
+
+  function wuxingRelation(outer, inner) {
+    if (outer === inner) return { 關係:"比和", 向背:"同氣" };
+    if (_SHENG[outer] === inner) return { 關係:"外生內", 向背:"客生我" };
+    if (_SHENG[inner] === outer) return { 關係:"內生外", 向背:"我生客（洩）" };
+    if (_KE[outer] === inner) return { 關係:"外剋內", 向背:"客剋我" };
+    return { 關係:"內剋外", 向背:"我剋客" };
+  }
+
+  function shengkeLayers(outer, inner) {
+    const L = {};
+    [["山五行", SHAN_WX[outer.所在山], SHAN_WX[inner.所在山]],
+     ["宮五行", PALACE_WX_Q[outer.所在宮], PALACE_WX_Q[inner.所在宮]],
+     ["向星五行", STAR_WX_Q[outer.三盤.向星], STAR_WX_Q[inner.三盤.向星]]
+    ].forEach(function(a){
+      const r = wuxingRelation(a[1], a[2]);
+      L[a[0]] = { 外:a[1], 內:a[2], 關係:r.關係, 向背:r.向背,
+                  客欺我: r.關係 === "外剋內" };
+    });
+    return L;
+  }
+
+  // 內外門元龍一致性。判定是機械的；「奴欺主／客欺我」之象出自所承之傳，
+  // 非《玄空學》書載亦非賦文原文——輸出一律帶來源欄位，不可掛錯出處。
+  function checkYuanlong(kous) {
+    const outer = kous.find(k => k.角色 === "外大門");
+    const inner = kous.find(k => k.角色 === "內大門");
+    if (!outer || !inner) return [];
+    const sameYuan = outer.元龍 === inner.元龍;
+    const sameGua = outer.所在宮 === inner.所在宮;
+    const n = {
+      類別: "內外門元龍",
+      外大門: outer.名稱 + "　" + outer.所在山 + "山（" + outer.元龍 + "元）" + outer.所在宮 + "宮",
+      內大門: inner.名稱 + "　" + inner.所在山 + "山（" + inner.元龍 + "元）" + inner.所在宮 + "宮",
+      同元龍: sameYuan, 同卦宮: sameGua
+    };
+    // 外大門主禦外。所承之傳裡「弱」即指元龍與內門不一本身，非另一指標。
+    // 外門自身星曜僅附參考，不另立會與元龍判定打架的判準。
+    n.外門自身星曜 = {
+      向星: outer.三盤.向星 + "（" + outer.旺衰.向星 + "）",
+      山星: outer.三盤.山星 + "（" + outer.旺衰.山星 + "）",
+      說明: "僅供參考。禦外是否失職，所承之傳以元龍是否一致為斷。"
+    };
+    n.五行參考 = shengkeLayers(outer, inner);
+    n.五行參考說明 = "三層並陳僅供參考。所承之傳未指定取哪一層；"
+                   + "山五行與宮五行在寅巳申亥辰戌六山不一致，取層不同結論可相反。";
+
+    if (sameYuan && sameGua) {
+      n.判定 = "一卦純清";
+      n.說明 = "內外兩門同宮同元龍，納氣純一。外門禦外之職與內門同氣，無客欺我之慮。";
+    } else if (sameYuan) {
+      n.判定 = "元龍相同、不同宮";
+      n.說明 = "兩門元龍一致但分屬兩宮，未犯元龍相雜；惟氣分兩路，主從仍須依實際動線判定。";
+    } else {
+      n.判定 = "元龍相雜";
+      n.象 = "客欺我（亦作奴欺主，兩語同指一事）";
+      n.來源 = "依所承之傳（口授），非《玄空學》書載，亦非賦文原文";
+      n.旁證 = "玄空秘旨旨-63「沖殘子息卦」、旨-64「裁破父母爻」（父母爻即天元）";
+      n.說明 = "外門走" + outer.元龍 + "元、內門走" + inner.元龍 + "元，兩門元龍不一。"
+             + "外大門主禦外，元龍既與內門不一，這道門便攔不住外來之氣，"
+             + "所謂「弱了禦敵不能」——是為客欺我，亦作奴欺主，兩語同指一事。"
+             + (sameGua ? "" : "　兩門並且分屬不同卦宮，已犯出卦，雜之尤甚。");
+    }
+    return [n];
+  }
+
+  function crossChecks(kous, tol) {
+    tol = tol === undefined ? 12 : tol;
+    const notes = [];
+    for (let i = 0; i < kous.length; i++) {
+      for (let j = i + 1; j < kous.length; j++) {
+        const gap = Math.abs(((kous[i].度數 - kous[j].度數 + 180) % 360 + 360) % 360 - 180);
+        if (gap >= 180 - tol) notes.push({
+          類別: "對沖（疑似穿堂）", 涉及: [kous[i].名稱, kous[j].名稱],
+          夾角: Math.round(gap * 10) / 10,
+          說明: "兩口度數近乎相對，理氣上為一線穿透之形。但是否真的通視須現場確認"
+              + "——中間若有牆、屏風或轉折即不成立。"
+        });
+      }
+    }
+    const byPalace = {};
+    kous.forEach(k => { (byPalace[k.所在宮] = byPalace[k.所在宮] || []).push(k.名稱); });
+    Object.keys(byPalace).forEach(function(p){
+      if (byPalace[p].length > 1) notes.push({
+        類別: "同宮聚集", 涉及: byPalace[p], 宮位: p,
+        說明: byPalace[p].length + " 個大開口同落" + p + "宮，該宮動性極高，"
+            + "須留意該宮山星是否失所。"
+      });
+    });
+    return notes;
+  }
+
+  function qikou(chart, apertures) {
+    const kous = apertures.map(a => locateKou(a.度數, chart, a.名稱, a.類型,
+                                              a.常開, a.角色, a.涵蓋));
+    const doors = kous.filter(k => k.類型 === "門");
+    let primary = doors.find(k => k.角色 === "內大門") || null;
+    if (!primary && doors.length) {
+      primary = doors.slice().sort(function(a, b){
+        return (b.常開 - a.常開) || (b.在向首宮 - a.在向首宮); })[0];
+    }
+    return {
+      元運: chart.元運, 坐向: chart.坐向, 向首宮: chart.向首卦宮,
+      主氣口: primary ? primary.名稱 : null,
+      氣口: kous,
+      相互關係: checkYuanlong(kous).concat(crossChecks(kous))
+    };
+  }
+
+  root.Xuankong = { paipan, cengjian, locate, fly, mountainOf, periodOfYear,
+                    qikou, wangshuai, wuxingRelation, spanFromWidth, analyseSpan,
+                    yearZibai, lichunDay, relation,
+                    M, LUOSHU, DIRECTION, GRID_ROWS, STAR_NAME, STAR_WX,
+                    PALACE_WX, HETU_WX, TIGUA, RING };
+})(typeof module !== "undefined" && module.exports ? module.exports : (this || window));
+
+</script>
+<script>
+(function(){
+  "use strict";
+  var X = window.Xuankong;
+  var $ = function(id){ return document.getElementById(id); };
+  var GONGS = ["巽","離","坤","震","中","兌","艮","坎","乾"];
+  var state = { mode:"xiang", assign:{}, custom:{}, six:[], kou:[] };
+
+  // 九宮配置格。用 <select> 而非 <input list=datalist>——
+  // datalist 在 iOS Safari 只會在鍵盤上方浮一條建議，且須先打字才出現，
+  // 現場單手操作根本發現不了它存在。下拉才是手機上點得到的東西。
+  var ROOMS = ["客廳","餐廳","主臥","次臥","書房","廚房","浴廁","玄關",
+               "走道","樓梯間","倉庫","陽台","和室","神明廳","更衣室","工作室"];
+
+  function cellHTML(g){
+    var v = state.assign[g] || "";
+    var custom = state.custom[g] || (v && ROOMS.indexOf(v) < 0);
+    var head = '<div class="a"><b>'+g+"·"+X.DIRECTION[g]+"</b>";
+    if (custom) {
+      return head + '<div class="cust"><input data-g="'+g+'" value="'+esc(v)
+           + '" placeholder="點這裡輸入"><button type="button" data-back="'+g
+           + '" aria-label="改回選單">↺</button></div></div>';
+    }
+    var o = '<option value="">—</option>';
+    ROOMS.forEach(function(r){
+      o += "<option"+(r === v ? " selected" : "")+">"+r+"</option>"; });
+    o += '<option value="__custom">自訂…</option>';
+    return head + '<select data-g="'+g+'">'+o+"</select></div>";
+  }
+
+  function renderAssign(focusG){
+    var h = "";
+    X.GRID_ROWS.forEach(function(row){ row.forEach(function(g){ h += cellHTML(g); }); });
+    $("assign").innerHTML = h;
+    if (focusG) {
+      var el = $("assign").querySelector('input[data-g="'+focusG+'"]');
+      if (el) el.focus();
+    }
+  }
+
+  renderAssign();
+
+  $("assign").addEventListener("change", function(e){
+    var g = e.target.getAttribute("data-g");
+    if (!g || e.target.tagName !== "SELECT") return;
+    if (e.target.value === "__custom") {
+      state.custom[g] = true; delete state.assign[g];
+      renderAssign(g); render(); return;
+    }
+    if (e.target.value) state.assign[g] = e.target.value; else delete state.assign[g];
+    render();
+  });
+  // 自訂欄逐字輸入時不整塊重畫，否則會失焦
+  $("assign").addEventListener("input", function(e){
+    var g = e.target.getAttribute("data-g");
+    if (!g || e.target.tagName !== "INPUT") return;
+    var v = e.target.value.trim();
+    if (v) state.assign[g] = v; else delete state.assign[g];
+    render();
+  });
+  $("assign").addEventListener("click", function(e){
+    var g = e.target.getAttribute("data-back");
+    if (!g) return;
+    delete state.custom[g]; delete state.assign[g];
+    renderAssign(); render();
+  });
+
+  $("degmode").addEventListener("click", function(e){
+    var b = e.target.closest("button"); if (!b) return;
+    state.mode = b.getAttribute("data-m");
+    [].forEach.call(this.querySelectorAll("button"), function(x){
+      x.setAttribute("aria-pressed", x === b ? "true" : "false"); });
+    render();
+  });
+  $("dm").onclick = function(){ step(-0.5); };
+  $("dp").onclick = function(){ step(0.5); };
+  function step(d){
+    var v = ((+$("deg").value + d) % 360 + 360) % 360;
+    $("deg").value = Math.round(v * 10) / 10;
+    render();
+  }
+
+  ["deg","year","period","floor","liunian","title","ruzhai","addr"].forEach(function(id){
+    $(id).addEventListener("input", render);
+    $(id).addEventListener("change", render);
+  });
+
+  // 快捷鈕：一點就把名稱、類型、角色一起帶入，現場單手可用
+  $("qkquick").addEventListener("click", function(e){
+    var b = e.target.closest("button"); if (!b) return;
+    $("qkname").value = b.getAttribute("data-n");
+    $("qkkind").value = b.getAttribute("data-k") || "門";
+    $("qkrole").value = b.getAttribute("data-r") || "";
+    // iOS 對「非使用者直接觸發」的 focus 不彈鍵盤，故不能只靠這一行；
+    // 欄位另加 placeholder「點這裡輸入」，讓使用者知道要自己點。
+    try { $("qkdeg").focus(); } catch (e) {}
+  });
+
+  $("qkadd").onclick = function(){
+    var n = $("qkname").value.trim(), d = parseFloat($("qkdeg").value);
+    var d2 = parseFloat($("qkdeg2").value);
+    if (!n || isNaN(d)) return;
+    var role = $("qkrole").value;
+    // 外／內大門各只能有一個——重設角色而非默默留下兩個，避免判定取到舊的那個
+    if (role) state.kou.forEach(function(k){ if (k.角色 === role) delete k.角色; });
+    var k = { 名稱:n, 度數:((d%360)+360)%360, 類型:$("qkkind").value,
+              常開:$("qkopen").checked };
+    if (!isNaN(d2)) k.涵蓋 = [((d%360)+360)%360, ((d2%360)+360)%360];
+    if (role) k.角色 = role;
+    state.kou.push(k);
+    $("qkname").value = ""; $("qkdeg").value = ""; $("qkdeg2").value = "";
+    $("qkopen").checked = false;
+    $("qkrole").value = "";
+    render();
+  };
+  $("qklist").addEventListener("click", function(e){
+    var i = e.target.getAttribute("data-k");
+    if (i !== null) { state.kou.splice(+i, 1); render(); }
+  });
+
+  $("sxadd").onclick = function(){
+    var n = $("sxname").value.trim(), d = parseFloat($("sxdeg").value);
+    if (!n || isNaN(d)) return;
+    state.six.push({ 名稱:n, 度數:((d%360)+360)%360 });
+    $("sxname").value = ""; $("sxdeg").value = ""; render();
+  };
+  $("sixlist").addEventListener("click", function(e){
+    var i = e.target.getAttribute("data-i");
+    if (i !== null) { state.six.splice(+i, 1); render(); }
+  });
+
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){
+    return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]; }); }
+
+  function render(){
+    var deg = parseFloat($("deg").value);
+    var out = $("out");
+    if (isNaN(deg)) { out.innerHTML = '<div class="note bad">請輸入度數</div>'; return; }
+    var per = $("period").value ? +$("period").value : null;
+    var yr = $("year").value ? +$("year").value : null;
+    if (!per && !yr) {
+      out.innerHTML = '<div class="note warn">請輸入建成年，或直接指定元運</div>';
+      $("json").value = "";
+      // 氣口已收下但還排不了盤——要講明白，否則會被當成沒加到
+      $("qklist").innerHTML = state.kou.map(function(k, i){
+        return "<div><span>" + (k.角色 ? "<b>"+esc(k.角色)+"</b>　" : "")
+             + esc(k.名稱) + "　" + k.度數.toFixed(1) + "°</span>"
+             + "<span data-k='" + i + "' role='button' tabindex='0'"
+             + " style='cursor:pointer;color:var(--bad)'>移除</span></div>";
+      }).join("");
+      $("qknotes").innerHTML = state.kou.length
+        ? '<div class="note warn">已收下 ' + state.kou.length
+          + ' 個氣口。<b>填入建成年或元運後</b>才能算出所在宮、旺衰與內外門元龍。</div>'
+        : "";
+      return;
+    }
+
+    var opts = { liunian: $("liunian").value ? +$("liunian").value : null };
+    if (state.mode === "xiang") opts.xiangDeg = deg; else opts.zuoDeg = deg;
+    if (per) opts.period = per; else opts.year = yr;
+
+    var r;
+    try { r = X.paipan(opts); }
+    catch (err) { out.innerHTML = '<div class="note bad">'+esc(err.message)+'</div>'; return; }
+
+    var j = r.兼向, gz = r.卦度.坐;
+    var toThr = (3 - Math.abs(j.偏離)).toFixed(2);
+    var h = '<div class="head"><div class="big">'
+      + "〇一二三四五六七八九"[r.元運] + "運　" + r.坐向 + '</div><div class="chips">'
+      + '<span class="chip '+(r.格局.名稱==="上山下水"?"bad":(r.格局.名稱==="其他"?"":"ok"))+'">'+r.格局.名稱+'</span>'
+      + '<span class="chip">'+r.卦例+'</span>'
+      + '<span class="chip">坐'+r.坐山方位+'向'+r.向首方位+'</span>'
+      + '<span class="chip">'+r.元龍+'元龍</span></div></div>';
+
+    // 兼向／卦界的臨界警示——現場複測時最要緊的一項
+    if (!j.是否兼向 && +toThr < 0.6)
+      h += '<div class="note warn">距起替門檻僅 '+toThr+'°，讀數若差半度即改走替卦，請複測取穩定值。</div>';
+    if (j.是否兼向 && Math.abs(j.偏離) - 3 < 0.6)
+      h += '<div class="note warn">剛過起替門檻 '+(Math.abs(j.偏離)-3).toFixed(2)+'°，請複測確認。</div>';
+    if (j.出卦) h += '<div class="note bad">⚠ '+esc(j.出卦警示)+'</div>';
+    if (gz.臨界) h += '<div class="note bad">⚠ 坐向緊貼卦界（距 '
+      + Math.min(gz.距前界, gz.距後界).toFixed(2)+'°），屬差錯空亡。</div>';
+
+    h += '<div class="axis">南</div><div class="grid">';
+    X.GRID_ROWS.forEach(function(row){ row.forEach(function(g){
+      var d = r.九宮[g];
+      var role = g===r.坐山卦宮 ? ' data-role="坐"' : (g===r.向首卦宮 ? ' data-role="向"' : "");
+      h += '<div class="cell"'+role+'><div class="stars">'
+        + '<span class="s shan w'+X.STAR_WX[d.山星]+'">'+d.山星+'</span>'
+        + '<span class="s xiang w'+X.STAR_WX[d.向星]+'">'+d.向星+'</span></div>'
+        + '<div class="yun">運 '+d.運星+'</div>'
+        + '<div class="gname">'+g+'·'+d.方位+'</div>'
+        + (state.assign[g] ? '<div class="rm">'+esc(state.assign[g])+'</div>' : "")
+        + '</div>';
+    });});
+    h += '</div><div class="ew"><span>東</span><span>西</span></div><div class="axis">北</div>';
+
+    h += "<dl>";
+    h += "<dt>實測</dt><dd>坐 "+r.實測.坐度+"°　向 "+r.實測.向度+"°　偏 "
+       + (r.實測.偏離中線>=0?"+":"")+r.實測.偏離中線.toFixed(2)+"°</dd>";
+    h += "<dt>卦度</dt><dd>"+gz.分金+"分金 · "+gz.卦+"卦　距界 "
+       + gz.距前界.toFixed(2)+"°／"+gz.距後界.toFixed(2)+"°</dd>";
+    if (gz.書載) h += "<dt>勘誤</dt><dd>書載「"+gz.書載+"」，推算為"+gz.卦+"</dd>";
+    var cm = r.城門訣.map(function(c){
+      return c.類別+" "+c.宮位+"宮 "+(c.可用?"可用":"不合"); }).join("；");
+    h += "<dt>城門</dt><dd>"+cm+"</dd>";
+    h += "<dt>打劫</dt><dd>"+(r.七星打劫.三般卦成立
+      ? r.七星打劫.細節.map(function(d){ return d.組別+" "+d.判定; }).join("；")
+      : "三般卦不成立")+"</dd>";
+    var sb = []; for (var k in r.三般卦與合十) if (r.三般卦與合十[k]) sb.push(k);
+    h += "<dt>三般／合十</dt><dd>"+(sb.length?sb.join("、"):"無")+"</dd>";
+    h += "<dt>入囚</dt><dd>向星中宮 "+r.令星入囚.向星.中宮星+" → "
+       + r.令星入囚.向星.入囚之運+"運（"+r.令星入囚.向星.入囚年段+"）</dd>";
+    var fy = r.伏吟反吟.全盤;
+    h += "<dt>伏吟反吟</dt><dd>"+(fy.length?fy.join("；"):"全盤無")+"</dd>";
+    if (r.流年) h += "<dt>流年 "+r.流年.年份+"</dt><dd>中宮 "+r.流年.中宮
+       +"　立春 "+r.流年.立春+"</dd>";
+
+    var fl = $("floor").value ? +$("floor").value : null;
+    if (fl) { var cj = X.cengjian(fl, r);
+      h += "<dt>層間</dt><dd>"+fl+"樓 河圖屬"+cj.層五行+"　局"+cj.局+"（"+cj.局五行
+         +"）　層與局 "+cj.層與局+"</dd>"; }
+    h += "</dl>";
+
+    out.innerHTML = h;
+
+    // 氣口：定位、旺衰、內外門元龍
+    if (state.kou.length) {
+      var qr = X.qikou(r, state.kou);
+      $("qklist").innerHTML = qr.氣口.map(function(k, i){
+        var tag = k.角色 ? '<b>' + esc(k.角色) + '</b>　' : "";
+        var star = k.三盤.向星 + k.旺衰.向星;
+        var cv = k.涵蓋;
+        return "<div><span>" + tag + esc(k.名稱) + "　"
+             + (cv ? cv.起.toFixed(1) + "–" + cv.訖.toFixed(1) + "°（張角 "
+                     + cv.張角.toFixed(1) + "°）"
+                   : k.度數.toFixed(1) + "°") + " → "
+             + k.所在山 + "山（" + k.元龍 + "元）" + k.所在宮 + "宮"
+             + (cv && cv.跨宮 ? "　<span style='opacity:.75'>"
+                 + cv.涵蓋宮.map(function(g){ return g.宮 + " "
+                     + Math.round(g.佔比*100) + "%"; }).join("／") + "</span>"
+                 + (cv.主從難定 ? " <b style='color:var(--warn)'>主從難定</b>" : "") : "")
+             + "　向" + star
+             + (k.在向首宮 ? "　★向首" : "")
+             + (k.山界 ? (k.山界.跨宮
+                 ? "<br><b style='color:var(--bad)'>⚠ 距" + esc(k.山界.鄰山)
+                   + "山界僅 " + k.山界.距界 + "°，跨界即改判" + esc(k.山界.鄰宮)
+                   + "宮——須複測</b>"
+                 : "　⚠距" + esc(k.山界.鄰山) + "山界 " + k.山界.距界 + "°（同宮）") : "")
+             + (k.卦度 && k.卦度.臨界 ? "　⚠臨卦界" : "")
+             + "</span><span data-k='" + i + "' role='button' tabindex='0'"
+             + " style='cursor:pointer;color:var(--bad)'>移除</span></div>";
+      }).join("");
+
+      var nh = "";
+      qr.相互關係.forEach(function(n){
+        if (n.類別 === "內外門元龍") {
+          if (n.判定 === "元龍相雜") {
+            var sk = Object.keys(n.五行參考).map(function(k){
+              return k + " " + n.五行參考[k].外 + "→" + n.五行參考[k].內
+                   + " " + n.五行參考[k].關係; });
+            nh += '<div class="note bad">⚠ 內外門<b>元龍相雜</b>——'
+                + esc(n.外大門) + "／" + esc(n.內大門) + "。"
+                + "<br><b>外大門主禦外</b>，元龍與內門不一則攔不住外氣，"
+                + "所謂「弱了禦敵不能」，是為<b>客欺我</b>。"
+                + "<br><span style='opacity:.8'>外門自身星曜：向 "
+                + esc(n.外門自身星曜.向星) + "　山 " + esc(n.外門自身星曜.山星)
+                + "（參考；禦外是否失職以元龍為斷，不以星曜為斷）"
+                + "<br>五行參考：" + esc(sk.join("　｜　"))
+                + "（所承之傳未指定取哪一層，僅供參考）"
+                + "<br>此象出自口授之傳，非書載亦非賦文原文。</span></div>";
+          } else if (n.判定 === "一卦純清") {
+            nh += '<div class="note">內外門<b>一卦純清</b>——同宮同元龍，納氣純一。</div>';
+          } else {
+            nh += '<div class="note warn">內外門元龍相同但分屬兩宮，未犯相雜；'
+                + "氣分兩路，主從須依實際動線判。</div>";
+          }
+        } else {
+          nh += '<div class="note warn">' + esc(n.類別) + "：" + esc(n.涉及.join("、"))
+              + "<br><span style='opacity:.8'>" + esc(n.說明) + "</span></div>";
+        }
+      });
+      $("qknotes").innerHTML = nh;
+    } else {
+      $("qklist").innerHTML = "";
+      $("qknotes").innerHTML = "";
+    }
+
+    // 外六事清單畫在自己的容器裡——移除的事件委派掛在 #sixlist 上
+    $("sixlist").innerHTML = state.six.map(function(s, i){
+      var m = X.mountainOf(s.度數);
+      return "<div><span>" + esc(s.名稱) + "　" + s.度數.toFixed(1) + "° → "
+           + m.name + "山 " + m.palace + "宮·" + X.DIRECTION[m.palace]
+           + "</span><span data-i='" + i + "' role='button' tabindex='0'"
+           + " style='cursor:pointer;color:var(--bad)'>移除</span></div>";
+    }).join("");
+
+    buildJSON(r, fl);
+  }
+
+  function buildJSON(r, fl){
+    var rooms = {};
+    for (var g in state.assign) {
+      var n = state.assign[g];
+      (rooms[n] = rooms[n] || []).push(g);
+    }
+    var 空間 = Object.keys(rooms).length ? {
+      案名: "現場採集之九宮格配置",
+      資料來源: "九宮格配置圖",
+      向度: r.實測.向度,
+      說明: "以現場採集 app 填入之九宮格配置；非實測平面圖，面積、缺角、太極點未知，故不列。",
+      房間: Object.keys(rooms).map(function(n){
+        var gs = rooms[n];
+        return { 名稱:n, 用途:"", 主歸宮:gs[0], 方位:X.DIRECTION[gs[0]],
+                 跨宮: gs.slice(1).map(function(g){ return {宮:g, 方位:X.DIRECTION[g]}; }) };
+      })
+    } : null;
+
+    var pkg = {
+      基本資料: {
+        案名: $("title").value || "陽宅玄空飛星分析報告",
+        地址: $("addr").value || "", 入宅年: $("ruzhai").value || "",
+        樓層: fl || "", 勘查日期: new Date().toISOString().slice(0,10),
+        羅盤: "實體羅盤實測"
+      },
+      排盤: r,
+      空間: 空間,
+      // 氣口帶完整分析結果（含內外門元龍判定），交回對話即可直接引用
+      氣口: state.kou.length ? X.qikou(r, state.kou) : null,
+      外六事: state.six.map(function(s){
+        var m = X.mountainOf(s.度數);
+        return { 名稱:s.名稱, 度數:s.度數, 山:m.name, 宮:m.palace, 方位:X.DIRECTION[m.palace],
+                 量測基準:"自宅中心下盤" };
+      }),
+      撰述: { 說明: "此區留白，由分析者依 SKILL.md 方法論撰寫後產出報告" }
+    };
+    $("json").value = JSON.stringify(pkg, null, 1);
+  }
+
+  // 平台把本檔內嵌在 sandbox="allow-scripts"（**不含** allow-same-origin）的 iframe，
+  // origin 因此為 null。該環境下自動複製與下載都被瀏覽器擋死，這是規格不是故障。
+  // 已實測：execCommand('copy') **回 false 而不丟例外**——只用 try/catch 判斷會誤報成功。
+  var inSandbox = (function(){
+    try { return String(document.location.origin) === "null"; } catch(e){ return true; }
+  })();
+
+  $("copy").onclick = function(){
+    var t = $("json"), b = this;
+    t.focus(); t.select();
+    try { t.setSelectionRange(0, 999999); } catch(e){}
+    var ok = false;
+    try { ok = (document.execCommand("copy") === true); } catch(e){ ok = false; }
+    b.textContent = ok ? "已複製 ✓" : "已全選，請按 ⌘C";
+    setTimeout(function(){ b.textContent = "複製 JSON"; }, ok ? 1600 : 4000);
+  };
+
+  if (inSandbox) {
+    // 下載在沙箱裡按了不會有反應，也不會報錯——與其留個死鈕，不如收起來。
+    $("dl").hidden = true;
+    $("exphint").hidden = false;
+    $("exphint").textContent = "平台內瀏覽器不允許自動複製或下載。按【複製 JSON】會把"
+      + "下方文字全選，再按 ⌘C（Windows 為 Ctrl+C；手機長按→複製）即可貼回對話。"
+      + "請勿全選整個畫面複製，那會拿到程式碼。";
+  } else {
+    $("dl").onclick = function(){
+      var blob = new Blob([$("json").value], {type:"application/json"});
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = ($("title").value || "玄空採集") + ".json";
+      a.click(); URL.revokeObjectURL(a.href);
+    };
+  }
+
+  render();
+})();
+</script>
+
+</body>
+</html>
