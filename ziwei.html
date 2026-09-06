@@ -1620,14 +1620,22 @@ ${timeAnchor}
     let timeJumpInfo = "";
     let nextYearVal = parseInt(targetYear);
     let isTimeJump = false;
-    if (text.includes("明年") || text.includes("下一年")) {
-      nextYearVal += 1;
+    // 【時間跳轉：只認「要看那一年」，不認「提到那一年」】2026-09-06 立。
+    // 原本一看到「去年」就把整張命盤跳到前一年，於是
+    //「**去年**爸爸買了一塊地，這塊地什麼時候可以賣？」
+    // ——背景是去年、問的是未來——整盤被跳到 2025，activeChart 從此是 2025 的盤，
+    // 提示詞、驗證程序、應期全建立在 2025 上，連三次算出已經過去的應期。
+    // 分辨方式：句中若同時出現「未來問句」（何時／幾時／多久／將來／能不能…），
+    // 表示時間詞只是在講背景，不跳轉。
+    const _askFuture = /何時|幾時|什麼時候|甚麼時候|多久|將來|未來|以後|今後|日後|會不會|能不能|可不可以|可以賣|賣得掉|賣不賣得|何日|哪一年|哪年|還有機會|還能|現在|目前|接下來|該不該|要不要|適不適合/.test(text);
+    const _yearWord = text.includes("明年") || text.includes("下一年") ? 1 : text.includes("後年") || text.includes("下下年") ? 2 : text.includes("去年") ? -1 : text.includes("前年") ? -2 : 0;
+    // 往未來跳（明年／後年）本來就是在問那一年，照跳；
+    // 往過去跳（去年／前年）遇到未來問句就不跳——問的是將來，不是那一年的盤。
+    if (_yearWord > 0) {
+      nextYearVal += _yearWord;
       isTimeJump = true;
-    } else if (text.includes("後年") || text.includes("下下年")) {
-      nextYearVal += 2;
-      isTimeJump = true;
-    } else if (text.includes("去年")) {
-      nextYearVal -= 1;
+    } else if (_yearWord < 0 && !_askFuture) {
+      nextYearVal += _yearWord;
       isTimeJump = true;
     }
     if (isTimeJump) {
