@@ -125,7 +125,10 @@
     const year = parseInt(inputs.year, 10);
     const hour = parseInt(inputs.hour, 10) || 0;
     const minute = parseInt(inputs.minute, 10) || 0;
-    const targetYear = parseInt(inputs.targetYear, 10);
+    // 未給流年就用今年。抽離自 ziwei.html 時，這道防護留在 UI 裡沒跟著搬，
+    // 導致引擎被單獨呼叫（CLI／測試／未來的 Capafy 包）時 mod12(NaN) → palaces[NaN]
+    // → TypeError。UI 那份原本寫死 fallback 2026，跨年會靜默算錯，這裡取當年。
+    const targetYear = parseInt(inputs.targetYear, 10) || new Date().getFullYear();
 
     let solar = Solar.fromYmdHms(year, inputs.month, inputs.day, hour, minute, 0);
     // 晚子時換日：過了夜間十一點即算次日（倪師法）

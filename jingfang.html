@@ -1004,7 +1004,7 @@
                     }
                 }
 
-                // 改走本地 RAG 伺服器：限定倪海廈中醫新庫(domain=tcm) + gemini-3.5-flash
+                // 改走本地 RAG 伺服器：限定倪海廈中醫新庫(domain=tcm)；模型由後端 GEMINI_MODEL 決定，不寫死在前端
                 const url = `http://127.0.0.1:8765/gemini?domain=tcm&key=${encodeURIComponent(window.__NI_TOKEN__())}`;
                 const body = JSON.stringify({ contents: [{ parts }], generationConfig: { responseMimeType: "application/json" } });
 

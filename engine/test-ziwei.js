@@ -228,6 +228,24 @@ if (caseFiles.length === 0) {
   });
 }
 
+// ── 引擎獨立可用性（抽離後才會暴露的問題）────────────────────
+
+// 這一節的由來：排盤邏輯從 ziwei.html 抽成模組時，UI 那邊的
+// `if (isNaN(safeTargetYear)) safeTargetYear = 2026` 沒有跟著搬進引擎，
+// 於是任何不經 UI 的呼叫（CLI、測試、未來的 Capafy 包）都會
+// mod12(NaN) → palaces[NaN] → TypeError。原測試每次都帶 targetYear，抓不到。
+(() => {
+  let c = null, err = null;
+  try {
+    c = E.buildChart({ year: 1984, month: 1, day: 1, hour: 12, minute: 0, gender: 'M' }, { Solar });
+  } catch (e) { err = e; }
+  chk('省略 targetYear 不應崩潰', !err, err ? err.message : '');
+  chk('省略 targetYear 時流年預設為今年',
+      !!c && c.palaces.some(p => p.isLiuNian), '沒有任何宮位被標為流年');
+  chk('省略 targetYear 仍排出十二宮', !!c && c.palaces.length === 12,
+      c ? String(c.palaces.length) : '—');
+})();
+
 // ── 結果 ────────────────────────────────────────────────────
 
 console.log('\n' + '='.repeat(52));

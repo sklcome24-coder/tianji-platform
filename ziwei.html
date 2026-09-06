@@ -1323,6 +1323,29 @@ function ZiweiYiDivine() {
       const prevStars = prevDayun.stars.map(s => s.name).join("、");
       prevDayunContext = `- **上一個大限 (${prevDayun.dayun}歲) 驗證區**：\n  - 位於【${prevDayun.name}】，星曜：${prevStars}。\n  - 若用戶對 ${verificationType} 無感，請立刻轉問此大限期間是否發生過重大轉折（如搬家、換工作、分手）。`;
     }
+    // 【問卦時間錨點】2026-09-06 立。
+    // inquiryTimeInfo 本來就是參數，卻從來沒有進到提示詞裡——UI 上寫著
+    // 「問於: 丙午年」，模型手上卻只有 activeChart.liunian.year。
+    // 於是使用者在丙午年(2026)問「何時能賣」，它照 2025 的流年推，
+    // 給出「2025 年秋季」——一個已經過去 321 天的應期。
+    // 這不是判斷失準，是資訊沒給它。
+    const _nowY = now.getFullYear();
+    const _inq = inquiryTimeInfo && (inquiryTimeInfo.ganZhi || inquiryTimeInfo.gregorian) ? `${inquiryTimeInfo.gregorian || ""} ${inquiryTimeInfo.ganZhi || ""}`.trim() : `${_nowY} 年（系統時間）`;
+    const timeAnchor = `【⏱ 問卦時間錨點——推應期前必讀】
+- **問卦當下**：${_inq}　（公元 ${_nowY} 年）
+- **使用者指定檢視的流年**：${activeChart.liunian.year} 年（${activeChart.liunian.name}）
+- 這兩個年份**是兩回事**：流年是「要看哪一年的盤」，問卦時間是「現在幾點鐘」。
+- **硬規矩一**：應期一律以**問卦當下**為起點往後推。
+  **禁止給出早於 ${_nowY} 年的應期**——那是已經過去的事，等於答非所問。
+  若卦象所指之時已過，就直說「此象所指之期已過」，再依卦推下一個對應之期。
+- **硬規矩二**：卦圖口訣若明指年支（如「乃狗年」「乃鼠年」），
+  **應期必須含年**，並自問卦當年往後找到最近的該年支之年。
+  若判斷此處只取月不取年，**必須寫明理由**；不可默默把年丟掉只留月。
+- **硬規矩三**：**定盤驗證尚未得到使用者回覆之前，只講卦象與觀察，不給應期、不給行動建議。**
+  驗證問句與完整結論不可寫在同一則回覆裡——那等於沒有驗證。
+  正確作法：先給卦象與驗證問句，等使用者回覆後再論應期。
+
+`;
     const verificationProtocol = `【🔍 倪師定盤/驗證標準程序 (Protocol v24.21)】\n1. **年初修正**：目前系統設定驗證年份為 **${verificationYear}年 (${verificationType})**。\n   - 請詢問這一年是否有發生命盤顯示的「化忌/沖照」事件。\n2. **雙重鎖定 (Fallback)**：\n   - 若用戶否認 ${verificationYear} 年的事件。\n   - **指令**：請退一步，驗證「上一個大限」：${prevDayunContext}。\n   - 這是定盤的關鍵，若兩個都對不上，請直說「時辰可能錯誤」。`;
     const gender = activeChart.userInfo.g;
     const genderRoleProtocol = `【👫 性別與角色校正協議】\n- 命主為${gender === 'M' ? '乾造 (男)' : '坤造 (女)'}。\n- 夫妻宮指${gender === 'M' ? '妻子' : '丈夫'}。`;
@@ -1371,12 +1394,49 @@ function ZiweiYiDivine() {
     const baziText = calendarData ? `命主八字：${calendarData.yearGanZhi}年 ${calendarData.monthGanZhi}月 ${calendarData.dayGanZhi}日 ${calendarData.timeGanZhi}時` : "";
     const ty = result.tiYong || {};
     const divContext = `【梅花易數卜卦結果】(起卦法：${result.method || '時間起卦'})
+${(() => {
+      // 【起卦時間隨卦同行】2026-09-06 立，使用者指出的：
+      // 「它應該從起卦時間知道自己身在何時」。
+      // 梅花易數是年月日時起卦——那四個數字就是卦的來源，不是補充說明。
+      // 原本只寫「起卦法：時間起卦」，卻沒寫是哪一個時間，等於給了答案沒給題目；
+      // 模型於是拿命盤流年（2025）當「現在」，連三次算出已經過去的應期。
+      const d = new Date();
+      const gz = inquiryTimeInfo && inquiryTimeInfo.ganZhi ? inquiryTimeInfo.ganZhi : "";
+      const gr = inquiryTimeInfo && inquiryTimeInfo.gregorian ? inquiryTimeInfo.gregorian : "";
+      const now = gr || `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日 ${d.getHours()} 時`;
+      return [`- **起卦時間（即此刻）：${now}${gz ? `　干支：${gz}` : ""}**`, `  此卦由這個年月日時起出，故**「現在」就是這一刻**——公元 **${d.getFullYear()}** 年。`, `  命盤上的流年 ${activeChart.liunian.year} 年是使用者指定要看的那一年，**不是現在**。`, `  凡「何時」「多久」「未來」之問，一律以此刻為原點。`].join("\n");
+    })()}
 - 本卦：【${hexName}】(卦序:${result.id})${result.movingLine ? `，動爻：第${result.movingLine}爻` : ''} —— 主當前之事況
 - 互卦：【${result.hu.name}】—— 主事情演變之過程
 - 變卦：【${result.zhi.name}】—— 主最終之結果
 - 體用：體卦為${ty.tiPos}卦${ty.tiName || ''}(${ty.tiElement || ''})，用卦為${ty.yongPos}卦${ty.yongName || ''}(${ty.yongElement || ''})
 - 體用生剋斷語：${ty.judgement || ''}
-- 應期參考數：${result.yingQi}（近事以日計、遠事以月計，並參體卦五行之旺季）`;
+- 應期參考數：${result.yingQi}
+${(() => {
+      // 【應期由程式換算，不交給模型心算】2026-09-06 立。
+      // 原本只給一個數字（如 79），起算日與換算全靠模型自己想——它連三次把起算點
+      // 當成流年盤的年份（2025），算出早已過去的應期。本 skill 的信條是
+      // 「盤由程式算、絕不心算」，日期加減同理，沒有理由例外。
+      const n = parseInt(result.yingQi, 10);
+      if (!Number.isFinite(n)) return "";
+      const base = new Date();
+      const fmt = d => `${d.getFullYear()} 年 ${d.getMonth() + 1} 月`;
+      const addD = k => {
+        const d = new Date(base);
+        d.setDate(d.getDate() + k);
+        return d;
+      };
+      const addM = k => {
+        const d = new Date(base);
+        d.setMonth(d.getMonth() + k);
+        return d;
+      };
+      const ds = String(n).split("").map(Number).filter(x => x > 0);
+      const lo = ds.length ? Math.min(...ds) : n,
+        hi = ds.length ? Math.max(...ds) : n;
+      const b = `${base.getFullYear()} 年 ${base.getMonth() + 1} 月 ${base.getDate()} 日`;
+      return [`  - **起算日＝問卦當日 ${b}**（不是流年盤的年份）。下列取象之期已由程式算出，`, `    **直接引用，不要自己再換算**：`, `    - 以日計（${n} 日）：約 **${fmt(addD(n))}**`, `    - 以月計（${n} 個月）：約 **${fmt(addM(n))}**`, `    - 取其位數為月（${lo}～${hi} 個月）：約 **${fmt(addM(lo))} ～ ${fmt(addM(hi))}**`, `  - 依卦理與事之遠近擇一，但**只能從上列已算好的區間裡選**，並原樣寫出公元年月。`, `    上列每一項都晚於起算日；**若你寫出早於 ${base.getFullYear()} 年 ${base.getMonth() + 1} 月的應期，即為算錯**。`, `  - 仍照體例：講的是取象之期，不是倒數計時。`].join("\n");
+    })()}`;
 
     // 變卦口訣（斷「結果」用）
     let zhiTianJiText = "";
@@ -1442,8 +1502,11 @@ ${showDisaster ? `## 第一步：【流年警訊提醒】(Critical)
 - **強制執行**：請100%專注於回答用戶當下提問的具體事件，給出明確方向與建議。
 `}
 
+${timeAnchor}
 ## 第二步：【驗證程序】(Verification)
 - **執行 Protocol**：優先驗證 ${verificationYear} 年。若不準，立刻改問上個大限。
+- **⛔ 未得回覆不得下結論**：本步驟的問句送出後，該則回覆到此為止（可先給卦象觀察）。
+  應期與行動建議留到使用者回覆之後再給。
 - **定盤**：如果用戶的反饋與你的盤面不符，請誠實地說：「那這個盤可能有誤」，或者「那可能是時辰不對」。
 
 ## 第三步：【梅易讀圖解卦】(Crucial)
@@ -1454,6 +1517,10 @@ ${showDisaster ? `## 第一步：【流年警訊提醒】(Critical)
 - **本門陽宅法不量羅盤度數**，這是地脈道所傳，不可與他派（如玄空飛星）混講。
   它只問兩件事：**誰**住、住在**哪個方位的房間**。要問的是家宅座向與各房間落在八方的何方，
   不是量度數。使用者未告知時**先問**，不要逕自假設某角是何卦。
+  **⛔ 順序不可顛倒**：問句要放在建議**之前**，不是給完整套建議才在最後補問。
+  2026-09-06 實例：先寫「如果您是家中長子⋯⋯請務必確認自己住在正東方」，
+  給完一整段配置建議，最後一行才問「請問您是家中長子嗎？」——
+  那不是先問，那是先斷後問。**條件未確認就不要給依該條件而來的建議。**
 - **成卦法：上卦看人、下卦看方位。** 居住者名份為外卦、房間方位為內卦，上下相疊即成卦，
   讀其卦意即得吉凶。人：父乾、母坤、長男震、長女巽、次男坎、次女離、少男艮、少女兌；
   方位：西北乾、西南坤、正東震、東南巽、正北坎、正南離、東北艮、正西兌。
@@ -1541,7 +1608,7 @@ ${showDisaster ? `## 第一步：【流年警訊提醒】(Critical)
   故不可寫成「陽宅是唯一的解藥」，那與本門三才之教相違。三者當並舉。
 - 形上之病（樑壓、路沖、開門見廁、床頭靠窗）非移位所能盡解，須現場認定。
 - 調整不必大動土木——移換床位、改變主要活動空間即可，此亦本門所傳。`;
-    return `${coreSystemLogic}\n----------------\n${baziText}\n${scanContext}\n${siHuaContext}\n${chartContext}\n${topicContext}\n${prevDayunContext}\n${divContext}\n${taskInstruction}\n${disasterContext}\n${verificationProtocol}\n${genderRoleProtocol}\n【用戶問題】：${userQ}`;
+    return `${timeAnchor}\n----------------\n${coreSystemLogic}\n----------------\n${baziText}\n${scanContext}\n${siHuaContext}\n${chartContext}\n${topicContext}\n${prevDayunContext}\n${divContext}\n${taskInstruction}\n${disasterContext}\n${verificationProtocol}\n${genderRoleProtocol}\n【用戶問題】：${userQ}`;
   };
   const handleSendText = async (overrideText = null) => {
     const text = overrideText || inputText.trim();
