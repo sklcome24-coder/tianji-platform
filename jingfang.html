@@ -1030,7 +1030,15 @@
                     }
                     const ragSources = Array.isArray(json.rag_sources) ? json.rag_sources : [];
 
-                    let raw = json?.candidates?.[0]?.content?.parts?.[0]?.text;
+                    // Gemini 的 content.parts 是陣列，模型可把回答分成多段回來。
+                    // 只取 parts[0] 會把後面整段丟掉——回覆斷在半句話。
+                    // 3.5 通常只回一段沒被觸發；2026-09-06 換 3.8 後在紫微那邊當場炸出來，
+                    // 這裡是同一個寫法，一併修。順手濾掉 thought 段。
+                    let raw = (Array.isArray(json?.candidates?.[0]?.content?.parts)
+                        ? json.candidates[0].content.parts
+                            .filter(x => x && typeof x.text === "string" && !x.thought)
+                            .map(x => x.text).join("")
+                        : "");
                     if (!raw) throw new Error("AI 回應為空（可能被安全過濾或後端異常），請重試或換個描述方式。");
                     raw = raw.replace(/```json/g, '').replace(/```/g, '').trim();
                     let result = null;

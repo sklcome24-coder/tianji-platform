@@ -1280,7 +1280,7 @@ function ZiweiYiDivine() {
         })
       });
       const data = await response.json();
-      const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "天機未顯。";
+      const aiText = partsText(data) || "天機未顯。";
       setChatHistory(prev => [...prev, {
         type: 'bot',
         text: aiText,
@@ -1610,6 +1610,16 @@ ${timeAnchor}
 - 調整不必大動土木——移換床位、改變主要活動空間即可，此亦本門所傳。`;
     return `${timeAnchor}\n----------------\n${coreSystemLogic}\n----------------\n${baziText}\n${scanContext}\n${siHuaContext}\n${chartContext}\n${topicContext}\n${prevDayunContext}\n${divContext}\n${taskInstruction}\n${disasterContext}\n${verificationProtocol}\n${genderRoleProtocol}\n【用戶問題】：${userQ}`;
   };
+
+  // Gemini 的 content.parts 是**陣列**，模型可以把回答分成多段回來。
+  // 原本各處都只取 parts[0].text，其餘整段丟掉——回覆就斷在半句話。
+  // 3.5 通常只回一段所以沒被觸發；2026-09-06 換 3.8 後當場炸出來。
+  // 一併濾掉 thought 段（思考內容不該印給使用者）。
+  const partsText = data => {
+    const parts = data?.candidates?.[0]?.content?.parts;
+    if (!Array.isArray(parts)) return "";
+    return parts.filter(p => p && typeof p.text === "string" && !p.thought).map(p => p.text).join("");
+  };
   const handleSendText = async (overrideText = null) => {
     const text = overrideText || inputText.trim();
     if (!text || !chart) return;
@@ -1770,7 +1780,7 @@ ${timeAnchor}
         })
       });
       const data = await response.json();
-      const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "天機未顯。";
+      const aiText = partsText(data) || "天機未顯。";
 
       // 補充彈窗中的 tianJiDesc 描述
       let tianJiDesc = TIAN_JI_FULL_TEXT[divRes.ben.name];
@@ -1820,7 +1830,7 @@ ${timeAnchor}
         })
       });
       const data = await res.json();
-      setLuckyCharm(JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text));
+      setLuckyCharm(JSON.parse(partsText(data)));
     } catch (e) {
       alert(e.message || "無法取得錦囊，請稍後再試");
     } finally {
@@ -1864,7 +1874,7 @@ ${timeAnchor}
         })
       });
       const data = await res.json();
-      setHealthReport(JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text));
+      setHealthReport(JSON.parse(partsText(data)));
     } catch (e) {
       alert(e.message || "無法取得食療報告，請稍後再試");
     } finally {

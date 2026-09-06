@@ -738,7 +738,7 @@
                   // 互動回饋屬於追問，isFollowUp 傳入 true，並且強制阻斷急災提示 (includeDisaster = false)
                   const prompt = generatePrompt(combinedContext, divRes, chart, true, !!hexImageSrc(divRes.id), null, false, parentMsg.inquiryTime, false);
                   const response = await fetchWithRetry(`http://127.0.0.1:8765/gemini?key=${encodeURIComponent(window.__NI_TOKEN__())}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
-                  const data = await response.json(); const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "天機未顯。";
+                  const data = await response.json(); const aiText = partsText(data) || "天機未顯。";
                   setChatHistory(prev => [...prev, { type: 'bot', text: aiText, divination: divRes, year: chart.liunian.year, ganZhi: chart.liunian.name, isFollowUp: true }]);
               } catch(e) { setChatHistory(prev => [...prev, { type: 'bot', text: `⚠️ 系統提示：${e.message}` }]); } finally { setIsLoading(false); }
           };
@@ -1037,6 +1037,17 @@ ${timeAnchor}
               return `${timeAnchor}\n----------------\n${coreSystemLogic}\n----------------\n${baziText}\n${scanContext}\n${siHuaContext}\n${chartContext}\n${topicContext}\n${prevDayunContext}\n${divContext}\n${taskInstruction}\n${disasterContext}\n${verificationProtocol}\n${genderRoleProtocol}\n【用戶問題】：${userQ}`;
           };
 
+          // Gemini 的 content.parts 是**陣列**，模型可以把回答分成多段回來。
+          // 原本各處都只取 parts[0].text，其餘整段丟掉——回覆就斷在半句話。
+          // 3.5 通常只回一段所以沒被觸發；2026-09-06 換 3.8 後當場炸出來。
+          // 一併濾掉 thought 段（思考內容不該印給使用者）。
+          const partsText = (data) => {
+              const parts = data?.candidates?.[0]?.content?.parts;
+              if (!Array.isArray(parts)) return "";
+              return parts.filter(p => p && typeof p.text === "string" && !p.thought)
+                          .map(p => p.text).join("");
+          };
+
           const handleSendText = async (overrideText = null) => {
               const text = overrideText || inputText.trim(); if (!text || !chart) return;
               /* 雲端版：金鑰可留空，未填時由後端 RAG 的備援金鑰處理，不擋操作 */
@@ -1086,7 +1097,7 @@ ${timeAnchor}
                 }
 
                 const response = await fetchWithRetry(`http://127.0.0.1:8765/gemini?key=${encodeURIComponent(window.__NI_TOKEN__())}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) });
-                const data = await response.json(); const aiText = data.candidates?.[0]?.content?.parts?.[0]?.text || "天機未顯。";
+                const data = await response.json(); const aiText = partsText(data) || "天機未顯。";
                 
                 // 補充彈窗中的 tianJiDesc 描述
                 let tianJiDesc = TIAN_JI_FULL_TEXT[divRes.ben.name];
@@ -1102,7 +1113,7 @@ ${timeAnchor}
               const prompt = `你是精通梅花易數的命理顧問（**不自稱倪海廈或任何真實人物**）。根據卦象：本卦${divRes.ben.name}、變卦${divRes.zhi.name}、體用斷語「${divRes.tiYong.judgement}」，與流年${chart.liunian.year}，生成JSON錦囊：{ "luckyColor": "string", "luckyDirection": "string", "advice": "string", "warning": "string" }。吉色宜取體卦五行(${divRes.tiYong.tiElement})之生扶之色。只回傳JSON。`;
               try {
                   const res = await fetchWithRetry(`http://127.0.0.1:8765/gemini?key=${encodeURIComponent(window.__NI_TOKEN__())}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } }) });
-                  const data = await res.json(); setLuckyCharm(JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text));
+                  const data = await res.json(); setLuckyCharm(JSON.parse(partsText(data)));
               } catch (e) { alert(e.message || "無法取得錦囊，請稍後再試"); } finally { setIsCharmLoading(false); }
           };
 
@@ -1127,7 +1138,7 @@ ${timeAnchor}
               穴位限於可自行按壓的保健穴，不涉針刺與劑量。`;
               try {
                   const res = await fetchWithRetry(`http://127.0.0.1:8765/gemini?key=${encodeURIComponent(window.__NI_TOKEN__())}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } }) });
-                  const data = await res.json(); setHealthReport(JSON.parse(data.candidates?.[0]?.content?.parts?.[0]?.text));
+                  const data = await res.json(); setHealthReport(JSON.parse(partsText(data)));
               } catch (e) { alert(e.message || "無法取得食療報告，請稍後再試"); } finally { setIsHealthLoading(false); }
           };
 
