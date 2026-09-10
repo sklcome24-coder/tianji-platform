@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>玄空星卦合參</title>
+<title>六爻禪解</title>
 <style>
   :root{--bg:#F7F5F0;--fg:#2b2620;--dim:#7a7166;--line:#e2ddd3;--accent:#78350f}
   @media (prefers-color-scheme:dark){:root{--bg:#17150f;--fg:#ece7dd;--dim:#9c9385;--line:#332e25}}
@@ -25,8 +25,8 @@
 </head>
 <body>
 <div class="box">
-  <h1>玄空星卦合參</h1>
-  <div class="sub">三元九運飛星排盤・現場採集・完整報告　｜　混元禪師 唯心聖教體系</div>
+  <h1>六爻禪解</h1>
+  <div class="sub">六爻起卦・用神應期・禪解　｜　混元禪師 唯心聖教體系</div>
   <div class="stat" id="stat"><span class="spin"></span>正在尋找分析主機…</div>
   <div class="err" id="err">
     <b>目前連不上分析主機。</b><br>
@@ -42,7 +42,7 @@
    卻一直公開可達。轉址頁沒有副本,也就沒有版本落差——永遠是最新的那一份。
    本機開著時優先走 127.0.0.1,不繞外網。 */
 (function(){
-  var LOCAL='http://127.0.0.1:8765', ROUTE='/xuankong';
+  var LOCAL='http://127.0.0.1:8765', ROUTE='/liuyao';
   var stat=document.getElementById('stat'), err=document.getElementById('err');
   function go(base){ location.replace(base+ROUTE); }
   function fail(){ stat.style.display='none'; err.style.display='block'; }
