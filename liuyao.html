@@ -51,6 +51,10 @@
       .then(function(j){ if(j&&j.api){ go(j.api); } else { fail(); } })
       .catch(fail);
   }
+  /* HTTPS 頁面打 http://127.0.0.1 會被瀏覽器當混合內容擋掉：白等 1.5 秒、
+     主控台留錯誤，本機捷徑一次也不會成立。Pages 就是 https，故直接走隧道。
+     這一條是紫微上架版早就有、雲端版至今沒有的防護（2026-09-10 健檢照出來）。 */
+  if (location.protocol === 'https:') { viaTunnel(); return; }
   var ac=('AbortController' in window)?new AbortController():null;
   var t=setTimeout(function(){ if(ac) ac.abort(); },1500);
   fetch(LOCAL+'/health', ac?{signal:ac.signal}:{})
