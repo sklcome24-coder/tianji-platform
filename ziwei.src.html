@@ -760,7 +760,17 @@
               let prevDayunContext = "";
               if (activeChart.prevDayunIdx !== -1) {
                   const prevDayun = activeChart.palaces[activeChart.prevDayunIdx]; const prevStars = prevDayun.stars.map(s => s.name).join("、");
-                  prevDayunContext = `- **上一個大限 (${prevDayun.dayun}歲) 驗證區**：\n  - 位於【${prevDayun.name}】，星曜：${prevStars}。\n  - 若用戶對 ${verificationType} 無感，請立刻轉問此大限期間是否發生過重大轉折（如搬家、換工作、分手）。`;
+                  // 【大限對應的公元年由程式算】2026-09-06 立。
+                  // 原本只給「14-23歲」，公元年交給模型自己加減——它算成
+                  // 「約2009年至2018年之間」（1984 年生的話應是 1997–2006，差十一年）。
+                  // 與應期同一類錯：凡日期加減，一律程式算，不交給模型。
+                  // 本系統用虛歲（介面標「虛歲」），故虛歲 N ↔ 公元 birthYear + N − 1。
+                  const _by = parseInt(birthYear, 10);
+                  const _rng = String(prevDayun.dayun).match(/(\d+)\s*-\s*(\d+)/);
+                  const _yrs = (Number.isFinite(_by) && _rng)
+                      ? `（虛歲，對應公元 **${_by + (+_rng[1]) - 1} 年 ～ ${_by + (+_rng[2]) - 1} 年**）`
+                      : "";
+                  prevDayunContext = `- **上一個大限 (${prevDayun.dayun}歲) 驗證區**${_yrs}：\n  - 位於【${prevDayun.name}】，星曜：${prevStars}。\n  - 若用戶對 ${verificationType} 無感，請立刻轉問此大限期間是否發生過重大轉折（如搬家、換工作、分手）。\n  - **問使用者時請直接講公元年**（上面已算好），不要自己換算歲數。`;
               }
               // 【問卦時間錨點】2026-09-06 立。
               // inquiryTimeInfo 本來就是參數，卻從來沒有進到提示詞裡——UI 上寫著
