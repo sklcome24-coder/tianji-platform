@@ -613,7 +613,7 @@ const calculateHexagram = (forceId = null, questionText = "") => {
   if (window.Solar && window.Lunar) {
     try {
       let solarNow = window.Solar.fromDate(now);
-      if (now.getHours() >= 23) solarNow = solarNow.next(1); // 晚子時屬次日（倪師法）
+      if (now.getHours() >= 23) solarNow = solarNow.next(1); // 晚子時屬次日（師承法）
       const lunarNow = solarNow.getLunar();
       fullGanZhi = `${lunarNow.getYearInGanZhi()}年 ${lunarNow.getMonthInGanZhi()}月 ${lunarNow.getDayInGanZhi()}日 ${lunarNow.getTimeInGanZhi()}時`;
       // 秒也顯示出來：時刻起卦以分秒定卦，沒有秒就無從複驗。
@@ -951,7 +951,7 @@ function ZiweiYiDivine() {
       const minute = parseInt(mStr || 0);
       const Solar = window.Solar;
       let solar = Solar.fromYmdHms(safeYear, inputs.month, inputs.day, hour, minute, 0);
-      if (hour >= 23) solar = solar.next(1); // 晚子時換日：過了夜間十一點即算次日（倪師法）
+      if (hour >= 23) solar = solar.next(1); // 晚子時換日：過了夜間十一點即算次日（師承法）
       const lunar = solar.getLunar();
       const bazi = {
         yearGanZhi: lunar.getYearInGanZhiExact(),
@@ -1411,7 +1411,7 @@ function ZiweiYiDivine() {
   正確作法：先給卦象與驗證問句，等使用者回覆後再論應期。
 
 `;
-    const verificationProtocol = `【🔍 倪師定盤/驗證標準程序 (Protocol v24.21)】\n1. **年初修正**：目前系統設定驗證年份為 **${verificationYear}年 (${verificationType})**。\n   - 請詢問這一年是否有發生命盤顯示的「化忌/沖照」事件。\n2. **雙重鎖定 (Fallback)**：\n   - 若用戶否認 ${verificationYear} 年的事件。\n   - **指令**：請退一步，驗證「上一個大限」：${prevDayunContext}。\n   - 這是定盤的關鍵，若兩個都對不上，請直說「時辰可能錯誤」。`;
+    const verificationProtocol = `【🔍 師承定盤/驗證標準程序 (Protocol v24.21)】\n1. **年初修正**：目前系統設定驗證年份為 **${verificationYear}年 (${verificationType})**。\n   - 請詢問這一年是否有發生命盤顯示的「化忌/沖照」事件。\n2. **雙重鎖定 (Fallback)**：\n   - 若用戶否認 ${verificationYear} 年的事件。\n   - **指令**：請退一步，驗證「上一個大限」：${prevDayunContext}。\n   - 這是定盤的關鍵，若兩個都對不上，請直說「時辰可能錯誤」。`;
     const gender = activeChart.userInfo.g;
     const genderRoleProtocol = `【👫 性別與角色校正協議】\n- 命主為${gender === 'M' ? '乾造 (男)' : '坤造 (女)'}。\n- 夫妻宮指${gender === 'M' ? '妻子' : '丈夫'}。`;
 
@@ -1421,7 +1421,7 @@ function ZiweiYiDivine() {
     if (!tianJiText) {
       // 處理異體字或簡繁差異 (例如 遁/遯)
       const fallbackName = hexName.replace('遯', '遁').replace('為', '为');
-      tianJiText = TIAN_JI_FULL_TEXT[fallbackName] || "無詳細卦圖口訣，請直接運用倪師天紀原意進行易經推斷。";
+      tianJiText = TIAN_JI_FULL_TEXT[fallbackName] || "無詳細卦圖口訣，請直接運用師承天紀原意進行易經推斷。";
     }
     const isDecadeAnalysis = userQ.includes("大運") || userQ.includes("大限") || userQ.includes("十年");
     const starLabel = s => `${s.name}${s.hua ? `(生年化${s.hua})` : ''}${s.liuHua ? `(流年化${s.liuHua})` : ''}`;
@@ -1534,7 +1534,7 @@ ${tianJiText}
 ## 第零步：【天紀教學回溯】(Review)
 - **閉目溫習**：在輸出任何文字前，請先快速檢索知識庫中關於《天紀》體系的命理原則。
 - **引號只給真正引得出處的話（最要緊的一條）**：
-  凡加了引號、或寫成「倪師論」「倪師說」「賦文云」的句子，**必須逐字出自上方
+  凡加了引號、或寫成「師承論」「師承說」「賦文云」的句子，**必須逐字出自上方
   【知識庫原文】**。檢索結果裡沒有的話，**一個字都不可以放進引號**。
   要講你自己推的，就用自己的話直述——「就此盤而言，⋯」「依斗數之理，⋯」，
   不必假託任何人。**寧可少一句引文，不要多一句偽造。**
@@ -1575,7 +1575,7 @@ ${timeAnchor}
 - **定盤**：如果用戶的反饋與你的盤面不符，請誠實地說：「那這個盤可能有誤」，或者「那可能是時辰不對」。
 
 ## 第三步：【梅易讀圖解卦】(Crucial)
-- 這是倪師《天紀》的靈魂。你必須嚴格根據我提供的【天紀卦圖口訣】來解卦。
+- 這是師承《天紀》的靈魂。你必須嚴格根據我提供的【天紀卦圖口訣】來解卦。
 - 不可以自己發明易經卦辭，必須「讀圖」。把圖中的「象」（如：鹿、馬、官人、堆錢、文字）講給用戶聽，告訴他們這在當下問題中代表什麼天機。
 
 ## 第四步：【陽宅調整建議 — 依天紀地脈道之八卦氣場】
@@ -1590,7 +1590,7 @@ ${timeAnchor}
   讀其卦意即得吉凶。人：父乾、母坤、長男震、長女巽、次男坎、次女離、少男艮、少女兌；
   方位：西北乾、西南坤、正東震、東南巽、正北坎、正南離、東北艮、正西兌。
   **卦是算出來的，沒有模糊空間**——不可只說「坎在北、主中男事業」就當結論，必須成卦再讀卦。
-- **六十四配置全表**（標「脈-XX」者為倪師課上明確講過之例；標「本位」者為該人本卦之位）：
+- **六十四配置全表**（標「脈-XX」者為師承課上明確講過之例；標「本位」者為該人本卦之位）：
 　父（丈夫）（外卦乾）：
 　　西北(乾)→乾為天（脈-01）
 　　西南(坤)→天地否（脈-11）
@@ -1668,7 +1668,7 @@ ${timeAnchor}
 - 另，八方所主之事可並參：乾西北貴人、坤西南婚姻、震東健康、巽東南財、
   坎北事業、離南名譽、艮東北財庫、兌西口才。**這是方位所主，不可拿來取代成卦**。
 - 依問者所問之人與事取其配置論之，並給可執行的調整（移床、換房、改功能）。
-- **分寸：陽宅是三分之一，不是唯一。** 倪師三才觀明言：天文（命）三分之一、
+- **分寸：陽宅是三分之一，不是唯一。** 師承三才觀明言：天文（命）三分之一、
   地理（陽宅）三分之一、人事（修為）三分之一——**「地理加上人間道可以大於天命」**。
   故不可寫成「陽宅是唯一的解藥」，那與本門三才之教相違。三者當並舉。
 - 形上之病（樑壓、路沖、開門見廁、床頭靠窗）非移位所能盡解，須現場認定。
@@ -1682,11 +1682,11 @@ ${timeAnchor}
   **同一個災依年齡段應在不同六親，早年應父母**（紀-08-03）。
   故問六親時，先定問者當時年紀落在哪一段大限。
 - **⛔ 算出大劫而人仍在時，改寫斷語，不要改盤，也不要宣告死期。**
-  師父原話：「**他怎麼還坐在你面前呢？……不能睜眼說瞎話**」——
-  他的作法是把死劫講成**已經發生過的險**：「**先生您去年有大意外、大橫禍**」（紀-11-01、紀-11-02）。
+  師承原話：「**他怎麼還坐在你面前呢？……不能睜眼說瞎話**」——
+  師承的作法是把死劫講成**已經發生過的險**：「**先生您去年有大意外、大橫禍**」（紀-11-01、紀-11-02）。
   一律照這個問法，請對方自行覆核；**覆核不上就是覆核不上，不可硬套**。
 - **沒死者劫不會消，會再轉一圈**：**＋12 年**同一地支再逢，且**改以重病、開刀、橫禍應**，
-  不以死應（紀-14-02、紀-14-03）。師父對「為何沒死」的解釋是「**祖上有德**」——
+  不以死應（紀-14-02、紀-14-03）。師承對「為何沒死」的解釋是「**祖上有德**」——
   那是他的斷語，**不是推算結果**，引用時要如此標明。
 - **⛔ 邊界（本門規定）**：不對任何人（含六親）宣告死期或壽限；
   涉及健康只講象與時間窗，**不作診斷、不勸阻就醫**；有疑慮者請其就醫。
@@ -1894,7 +1894,7 @@ ${timeAnchor}
     if (isCharmLoading || !chart) return; /* 雲端版：金鑰可留空，未填時由後端 RAG 的備援金鑰處理，不擋操作 */
     setIsCharmLoading(true);
     const divRes = calculateHexagram();
-    const prompt = `你是精通梅花易數的命理顧問（**不自稱倪海廈或任何真實人物**）。根據卦象：本卦${divRes.ben.name}、變卦${divRes.zhi.name}、體用斷語「${divRes.tiYong.judgement}」，與流年${chart.liunian.year}，生成JSON錦囊：{ "luckyColor": "string", "luckyDirection": "string", "advice": "string", "warning": "string" }。吉色宜取體卦五行(${divRes.tiYong.tiElement})之生扶之色。只回傳JSON。`;
+    const prompt = `你是精通梅花易數的命理顧問（**不自稱任何真實人物**）。根據卦象：本卦${divRes.ben.name}、變卦${divRes.zhi.name}、體用斷語「${divRes.tiYong.judgement}」，與流年${chart.liunian.year}，生成JSON錦囊：{ "luckyColor": "string", "luckyDirection": "string", "advice": "string", "warning": "string" }。吉色宜取體卦五行(${divRes.tiYong.tiElement})之生扶之色。只回傳JSON。`;
     try {
       const res = await fetchWithRetry(`http://127.0.0.1:8765/gemini?key=${encodeURIComponent(window.__NI_TOKEN__())}`, {
         method: "POST",
@@ -1925,7 +1925,7 @@ ${timeAnchor}
     setIsHealthLoading(true);
     const healthPalace = chart.palaces.find(p => p.name === '疾厄');
     const stars = healthPalace.stars.map(s => s.name).join('、') || '無主星';
-    const prompt = `你是精通紫微斗數的命理顧問，兼通中醫養生常識（**不自稱倪海廈或任何真實人物**）。
+    const prompt = `你是精通紫微斗數的命理顧問，兼通中醫養生常識（**不自稱任何真實人物**）。
               根據命盤【疾厄宮】星曜：${stars}，以及流年${chart.liunian.year}，推測體質並給出中醫食療與穴位保養建議。
               回傳JSON格式：
               {
