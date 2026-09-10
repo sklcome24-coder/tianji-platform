@@ -1879,8 +1879,8 @@ ${timeAnchor}
         ganZhi: activeChart.liunian.name,
         isFollowUp: isFollowUpAction,
         inquiryTime: inquiryTimeData,
-        needsInteraction: /[？?]\s*$/.test(aiText.trim()) || aiText.includes("請問") || aiText.includes("驗證")
-      }]); /* 2026-09-10：原本只認「請問」「驗證」二詞，模型寫成「您是家中長子嗎？」就不開框， 而陽宅必須先問誰住、住哪個方位才能成卦——問了無處可答＝把人卡死在半路。 */
+        needsInteraction: /[？?]/.test(aiText) || aiText.includes("請問") || aiText.includes("驗證")
+      }]); /* 2026-09-10 第二次修：只要有問號就開框，不限句尾—— 模型會把問句寫在段落中間、用句號收尾又不寫「請問」，句尾判定不成立就整個框沒生成。 */ /* 2026-09-10：原本只認「請問」「驗證」二詞，模型寫成「您是家中長子嗎？」就不開框， 而陽宅必須先問誰住、住哪個方位才能成卦——問了無處可答＝把人卡死在半路。 */
     } catch (e) {
       setChatHistory(prev => [...prev, {
         type: 'bot',
