@@ -762,7 +762,7 @@ function ZiweiYiDivine() {
   //「上卦看人、下卦看方位」；打字則可能寫成「東邊那間」讓模型自己猜。
   // 【只寫一次的判定】決定這一則要不要開回答框。真正的問題不是判定式，
   // 是**有好幾個地方在推 bot 訊息、只有一個帶旗標**（2026-09-10 查推送點才發現）。
-  const needsAnswer = s => /[？?]/.test(s || "") || String(s || "").includes("請問") || String(s || "").includes("驗證");
+  const needsAnswer = s => /[？?]/.test(String(s || "")) || /(請問|驗證|請先?告知|請提供|請確認|請回覆|請核對|先行回覆|麻煩告知|以利定盤)/.test(String(s || "")); /* 2026-09-10：模型會連問號都不寫（「請先告知：…」），故放寬到索取資訊的說法。 陽宅那條路已改由按鈕旗標決定，這裡只是其他路徑的後備。 */
   const [yzPerson, setYzPerson] = useState("");
   const [yzDir, setYzDir] = useState("");
   const YZ_PEOPLE = ["父（乾）", "母（坤）", "長男（震）", "長女（巽）", "次男（坎）", "次女（離）", "少男（艮）", "少女（兌）"];
