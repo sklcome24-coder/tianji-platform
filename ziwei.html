@@ -1714,7 +1714,10 @@ ${timeAnchor}
     if (!Array.isArray(parts)) return "";
     return parts.filter(p => p && typeof p.text === "string" && !p.thought).map(p => p.text).join("");
   };
-  const handleSendText = async (overrideText = null) => {
+
+  // 第二個參數：這一輪是不是「陽宅佈局」那條路。由按鈕決定，不解析模型的標點
+  // （2026-09-10 第五次修：模型連問號都不寫，靠文字判定必然漏）。
+  const handleSendText = async (overrideText = null, yzAsk = false) => {
     const text = overrideText || inputText.trim();
     if (!text || !chart) return;
     /* 雲端版：金鑰可留空，未填時由後端 RAG 的備援金鑰處理，不擋操作 */
@@ -1890,7 +1893,8 @@ ${timeAnchor}
         ganZhi: activeChart.liunian.name,
         isFollowUp: isFollowUpAction,
         inquiryTime: inquiryTimeData,
-        needsInteraction: needsAnswer(aiText)
+        needsInteraction: yzAsk || needsAnswer(aiText),
+        yzMode: yzAsk
       }]); /* 2026-09-10 第二次修：只要有問號就開框，不限句尾—— 模型會把問句寫在段落中間、用句號收尾又不寫「請問」，句尾判定不成立就整個框沒生成。 */ /* 2026-09-10：原本只認「請問」「驗證」二詞，模型寫成「您是家中長子嗎？」就不開框， 而陽宅必須先問誰住、住哪個方位才能成卦——問了無處可答＝把人卡死在半路。 */
     } catch (e) {
       setChatHistory(prev => [...prev, {
@@ -1976,7 +1980,7 @@ ${timeAnchor}
     }
   };
   const handleFengShui = () => {
-    handleSendText("請根據我的命盤與田宅宮，以您的「陽宅風水」理論，告訴我目前最適合睡在哪個方位？需要注意哪些居家煞氣？");
+    handleSendText("請根據我的命盤與田宅宮，以您的「陽宅風水」理論，告訴我目前最適合睡在哪個方位？需要注意哪些居家煞氣？", true);
   };
   const gridConfig = [{
     idx: 5,
@@ -2756,9 +2760,9 @@ ${timeAnchor}
     className: "text-xs font-bold text-green-800 mb-1 flex items-center gap-1"
   }, /*#__PURE__*/React.createElement(CheckSquare, {
     size: 12
-  }), " ", isYzAsk(msg.text) ? "請回答上面的提問：" : "請回饋事實，以利定盤："), /*#__PURE__*/React.createElement("div", {
+  }), " ", msg.yzMode || isYzAsk(msg.text) ? "請回答上面的提問：" : "請回饋事實，以利定盤："), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2"
-  }, isYzAsk(msg.text) && /*#__PURE__*/React.createElement("div", {
+  }, (msg.yzMode || isYzAsk(msg.text)) && /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 w-full"
   }, /*#__PURE__*/React.createElement("select", {
     value: yzPerson,
@@ -2786,7 +2790,7 @@ ${timeAnchor}
     value: x
   }, x)))), /*#__PURE__*/React.createElement("input", {
     type: "text",
-    placeholder: isYzAsk(msg.text) ? "例如：長子，住正東那間..." : "例如：是，去年八月確實發生過...",
+    placeholder: msg.yzMode || isYzAsk(msg.text) ? "例如：長子，住正東那間..." : "例如：是，去年八月確實發生過...",
     className: "flex-1 text-xs border border-green-300 rounded px-2 py-1 focus:outline-none focus:border-green-500",
     value: interactiveInput,
     onChange: e => setInteractiveInput(e.target.value),
