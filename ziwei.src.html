@@ -482,7 +482,37 @@
           const [cloudRecords, setCloudRecords] = useState([]);
           const [isSaving, setIsSaving] = useState(false);
           const [saveStatus, setSaveStatus] = useState("");
-          const [interactiveInput, setInteractiveInput] = useState(""); 
+          const [interactiveInput, setInteractiveInput] = useState("");
+          // 陽宅提問專用的兩格結構化回答（2026-09-10 增設，與上架版同步）。
+          // 六親與方位都是封閉集合（各八個），做成下拉一填就對得上成卦法
+          //「上卦看人、下卦看方位」；打字則可能寫成「東邊那間」讓模型自己猜。
+          const [yzPerson, setYzPerson] = useState("");
+          const [yzDir, setYzDir] = useState("");
+          const YZ_PEOPLE = ["父（乾）","母（坤）","長男（震）","長女（巽）","次男（坎）","次女（離）","少男（艮）","少女（兌）"];
+          const YZ_DIRS = ["西北（乾）","西南（坤）","正東（震）","東南（巽）","正北（坎）","正南（離）","東北（艮）","正西（兌）"];
+          const isYzAsk = (s) => /方位|住|長子|長女|次男|次女|少男|少女|排行/.test(s || "") && /[？?]/.test(s || "");
+          // 【陽宅成卦由程式算，不交給模型】2026-09-10，與上架版同步。
+          // 成卦法：上卦看人、下卦看方位。卦是算出來的，沒有模糊空間——
+          // 這裡算出卦名並取出卦意原文餵進去，模型只負責「把這個象扣回本案」。
+          const TRI_NO = { "乾":1,"兌":2,"離":3,"震":4,"巽":5,"坎":6,"艮":7,"坤":8 };
+          const triOf = label => {
+            const m = String(label || "").match(/[（(]([乾兌離震巽坎艮坤])[）)]/);
+            return m ? TRI_NO[m[1]] : 0;
+          };
+          const yzHexContext = (person, dir) => {
+            const u = triOf(person), l = triOf(dir);
+            if (!u || !l) return "";
+            const h = hexFromTrigrams(u, l);
+            const desc = (typeof TIAN_JI_FULL_TEXT !== "undefined" && TIAN_JI_FULL_TEXT[h.name]) || "";
+            return `\n【陽宅成卦（程式算出，不可自行推算或改判）】\n`
+              + `- 上卦（居住者）：${person}　下卦（房間方位）：${dir}\n`
+              + `- 成卦：**${h.name}**（周易第 ${h.id} 卦）\n`
+              + (desc ? `- 此卦圖象原文：${desc}\n` : "")
+              + `**必須據此卦之象作答**：先說成的是哪一卦、上下卦各代表誰與哪個方位，\n`
+              + `再讀此卦之象，並**逐句扣回本案**——扣回這位居住者、這個方位、以及他問的那件事，\n`
+              + `不可只寫「此卦吉／凶」了事，也不可拿卦名當裝飾而內容與卦意無關。\n`;
+          };
+          const composeYz = (person, dir) => (person ? `我是${person}` : "") + (dir ? (person ? "，" : "") + `住${dir}的房間` : ""); 
           const [disasterFlags, setDisasterFlags] = useState([]); 
           const [isSettingsOpen, setIsSettingsOpen] = useState(false);
           const [userApiKey, setUserApiKey] = useState("");
@@ -749,8 +779,10 @@
               if(!chart) return;
               /* 雲端版：金鑰可留空，未填時由後端 RAG 的備援金鑰處理，不擋操作 */
               const parentMsg = chatHistory[parentMsgIndex];
-              const combinedContext = `【用戶針對前一輪提問的回饋】\n- 原問題背景：${parentMsg.text} (上下文)\n- 用戶回答：${answer}\n- 系統指令：請根據用戶確認的「事實」，對命盤進行最終校準與解說。`;
-              setInteractiveInput(""); 
+              // 成卦要在清空兩個下拉「之前」算——順序顛倒就取到空字串，卦算不出來。
+              const yzHex = yzHexContext(yzPerson, yzDir);
+              const combinedContext = `【用戶針對前一輪提問的回饋】\n- 原問題背景：${parentMsg.text} (上下文)\n- 用戶回答：${answer}\n- 系統指令：請根據用戶確認的「事實」，對命盤進行最終校準與解說。` + yzHex;
+              setInteractiveInput(""); setYzPerson(""); setYzDir(""); 
               const newHistory = [...chatHistory, { type: 'user', text: `(回覆系統提問) ${answer}`, isFollowUp: true }];
               setChatHistory(newHistory); setIsLoading(true);
               try {
@@ -1133,7 +1165,7 @@ ${timeAnchor}
                 let tianJiDesc = TIAN_JI_FULL_TEXT[divRes.ben.name];
                 if(!tianJiDesc) tianJiDesc = TIAN_JI_FULL_TEXT[divRes.ben.name.replace('遯','遁').replace('為','为')] || "詳細圖解請見天紀原著";
                 
-                setChatHistory(prev => [...prev, { type: 'bot', text: aiText, divination: { ...divRes, tianJiDesc: tianJiDesc }, year: activeChart.liunian.year, ganZhi: activeChart.liunian.name, isFollowUp: isFollowUpAction, inquiryTime: inquiryTimeData, needsInteraction: aiText.includes("請問") || aiText.includes("驗證") }]);
+                setChatHistory(prev => [...prev, { type: 'bot', text: aiText, divination: { ...divRes, tianJiDesc: tianJiDesc }, year: activeChart.liunian.year, ganZhi: activeChart.liunian.name, isFollowUp: isFollowUpAction, inquiryTime: inquiryTimeData, needsInteraction: /[？?]\s*$/.test(aiText.trim()) || aiText.includes("請問") || aiText.includes("驗證") }]);  /* 2026-09-10：原本只認「請問」「驗證」二詞，模型寫成「您是家中長子嗎？」就不開框， 而陽宅必須先問誰住、住哪個方位才能成卦——問了無處可答＝把人卡死在半路。 */
               } catch (e) { setChatHistory(prev => [...prev, { type: 'bot', text: `⚠️ 系統提示：${e.message}` }]); } finally { setIsLoading(false); }
           };
           
@@ -1348,7 +1380,7 @@ ${timeAnchor}
                                       </div>
                                       <div className="whitespace-pre-wrap">{msg.text}</div>
                                       {msg.divination && ( <div className="mt-2 flex gap-2"><button onClick={() => setIsImageModalOpen(true)} className="text-[10px] flex items-center gap-1 text-blue-600 hover:underline bg-blue-50 px-2 py-1 rounded"><ImageIcon size={12}/> 點此查看【{msg.divination.ben.name}】原圖</button></div> )}
-                                      {msg.type === 'bot' && msg.needsInteraction && !chatHistory[idx + 1] && ( <div className="mt-3 bg-green-50 border border-green-200 p-2 rounded-lg animate-in slide-in-from-top-2"><div className="text-xs font-bold text-green-800 mb-1 flex items-center gap-1"><CheckSquare size={12}/> 請回饋事實，以利定盤：</div><div className="flex gap-2"><input type="text" placeholder="例如：是，去年八月確實發生過..." className="flex-1 text-xs border border-green-300 rounded px-2 py-1 focus:outline-none focus:border-green-500" value={interactiveInput} onChange={(e) => setInteractiveInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleInteractiveSubmit(interactiveInput, idx)} /><button onClick={() => handleInteractiveSubmit(interactiveInput, idx)} className="bg-green-600 text-white text-xs px-3 py-1 rounded hover:bg-green-700 transition-colors">確認</button></div></div> )}
+                                      {msg.type === 'bot' && msg.needsInteraction && !chatHistory[idx + 1] && ( <div className="mt-3 bg-green-50 border border-green-200 p-2 rounded-lg animate-in slide-in-from-top-2"><div className="text-xs font-bold text-green-800 mb-1 flex items-center gap-1"><CheckSquare size={12}/> {isYzAsk(msg.text) ? "請回答上面的提問：" : "請回饋事實，以利定盤："}</div><div className="flex flex-wrap gap-2">{isYzAsk(msg.text) && ( <div className="flex gap-2 w-full"><select value={yzPerson} onChange={(e) => { setYzPerson(e.target.value); setInteractiveInput(composeYz(e.target.value, yzDir)); }} className="flex-1 text-xs border border-green-300 rounded px-2 py-1 bg-white focus:outline-none focus:border-green-500"><option value="">居住者（六親）…</option>{YZ_PEOPLE.map(x => <option key={x} value={x}>{x}</option>)}</select><select value={yzDir} onChange={(e) => { setYzDir(e.target.value); setInteractiveInput(composeYz(yzPerson, e.target.value)); }} className="flex-1 text-xs border border-green-300 rounded px-2 py-1 bg-white focus:outline-none focus:border-green-500"><option value="">房間方位…</option>{YZ_DIRS.map(x => <option key={x} value={x}>{x}</option>)}</select></div> )}<input type="text" placeholder={isYzAsk(msg.text) ? "例如：長子，住正東那間..." : "例如：是，去年八月確實發生過..."} className="flex-1 text-xs border border-green-300 rounded px-2 py-1 focus:outline-none focus:border-green-500" value={interactiveInput} onChange={(e) => setInteractiveInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleInteractiveSubmit(interactiveInput, idx)} /><button onClick={() => handleInteractiveSubmit(interactiveInput, idx)} className="bg-green-600 text-white text-xs px-3 py-1 rounded hover:bg-green-700 transition-colors">確認</button></div></div> )}
                                   </div>
                               </div>
                           ))}
