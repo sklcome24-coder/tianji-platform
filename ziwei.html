@@ -543,7 +543,9 @@ const tiYongJudge = (ti, yong) => {
 // 網路中斷與逾時一律不重試 —— 2026-08-18 的教訓：判讀跑 156 秒、
 // 隧道 100 秒就閒置切斷，前端把它當成可重試的失敗，一題連燒五輪完整生成、
 // 一個字都拿不到。重試只有在「同樣的請求下次可能成功」時才有意義。
-const RETRYABLE = [429, 500, 502, 503, 529];
+// 429 不在重試名單：後端的 429 代表額度用罄／期限到期，重試一百次也不會過。
+// （2026-08-28 上架版已修，免費版漏掉，2026-09-10 由 test_drift.py 抓出。）
+const RETRYABLE = [500, 502, 503, 529];
 const fetchWithRetry = async (url, options, maxRetries = 2) => {
   let retries = 0;
   while (true) {
@@ -552,6 +554,14 @@ const fetchWithRetry = async (url, options, maxRetries = 2) => {
       if (!response.ok) {
         const err = new Error(`API Error: ${response.status}`);
         err.status = response.status;
+        // 伺服器把真正的原因寫在 body 裡（Gemini 形狀的 JSON）。
+        // 不讀出來，就等於把具體原因換成一句沒有意義的通則訊息。
+        // 就地取，不呼叫下面那個 partsText——它宣告在更內層的作用域，
+        // 在這裡是取不到的（2026-09-10 差點寫成那樣）。
+        try {
+          const parts = JSON.parse(await response.text())?.candidates?.[0]?.content?.parts;
+          err.serverMessage = Array.isArray(parts) ? parts.filter(x => x && typeof x.text === "string" && !x.thought).map(x => x.text).join("") : "";
+        } catch (e) {/* body 不是預期格式就算了 */}
         throw err;
       }
       return response;
@@ -566,7 +576,8 @@ const fetchWithRetry = async (url, options, maxRetries = 2) => {
       // 網路層失敗（連線被切、逾時）沒有 status —— 不重試。
       if (!error.status || !RETRYABLE.includes(error.status) || retries >= maxRetries) {
         if (error.status === 429) {
-          throw new Error("請求太頻繁 (API 429 Error)，請稍等一分鐘後再試。");
+          // 不要編造等待時間——伺服器沒說要等多久，我們也不知道。
+          throw new Error(error.serverMessage || "【額度已滿】知識庫目前無法回應（HTTP 429）。這通常是當日用量已滿，稍後再試。");
         }
         if (!error.status) {
           throw new Error("【連線失敗或逾時】後端沒有在時限內回應。" + "若是用手機連家中 Mac，隧道約 100 秒會閒置切斷；請改用電腦，或縮短提問。");
