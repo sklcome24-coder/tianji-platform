@@ -754,6 +754,9 @@ function ZiweiYiDivine() {
   // 陽宅提問專用的兩格結構化回答（2026-09-10 增設，與上架版同步）。
   // 六親與方位都是封閉集合（各八個），做成下拉一填就對得上成卦法
   //「上卦看人、下卦看方位」；打字則可能寫成「東邊那間」讓模型自己猜。
+  // 【只寫一次的判定】決定這一則要不要開回答框。真正的問題不是判定式，
+  // 是**有好幾個地方在推 bot 訊息、只有一個帶旗標**（2026-09-10 查推送點才發現）。
+  const needsAnswer = s => /[？?]/.test(s || "") || String(s || "").includes("請問") || String(s || "").includes("驗證");
   const [yzPerson, setYzPerson] = useState("");
   const [yzDir, setYzDir] = useState("");
   const YZ_PEOPLE = ["父（乾）", "母（坤）", "長男（震）", "長女（巽）", "次男（坎）", "次女（離）", "少男（艮）", "少女（兌）"];
@@ -1344,7 +1347,8 @@ function ZiweiYiDivine() {
         divination: divRes,
         year: chart.liunian.year,
         ganZhi: chart.liunian.name,
-        isFollowUp: true
+        isFollowUp: true,
+        needsInteraction: needsAnswer(aiText)
       }]);
     } catch (e) {
       setChatHistory(prev => [...prev, {
@@ -1879,7 +1883,7 @@ ${timeAnchor}
         ganZhi: activeChart.liunian.name,
         isFollowUp: isFollowUpAction,
         inquiryTime: inquiryTimeData,
-        needsInteraction: /[？?]/.test(aiText) || aiText.includes("請問") || aiText.includes("驗證")
+        needsInteraction: needsAnswer(aiText)
       }]); /* 2026-09-10 第二次修：只要有問號就開框，不限句尾—— 模型會把問句寫在段落中間、用句號收尾又不寫「請問」，句尾判定不成立就整個框沒生成。 */ /* 2026-09-10：原本只認「請問」「驗證」二詞，模型寫成「您是家中長子嗎？」就不開框， 而陽宅必須先問誰住、住哪個方位才能成卦——問了無處可答＝把人卡死在半路。 */
     } catch (e) {
       setChatHistory(prev => [...prev, {
