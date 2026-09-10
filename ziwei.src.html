@@ -7,19 +7,23 @@
   var LOCAL = 'http://127.0.0.1:8765';
   var _fetch = window.fetch.bind(window);
   var base = LOCAL;
+  /* HTTPS 頁面打 http://127.0.0.1 會被瀏覽器當混合內容擋掉：白等 1.5 秒、
+     主控台留錯誤，本機捷徑一次也不會成立。GitHub Pages 就是 https。
+     這一條紫微上架版早就有，雲端版一直沒有——2026-09-10 健檢比對三份產物時照出來。 */
+  function fromConfig(done){
+    _fetch('backend.json?t=' + Date.now())
+      .then(function(r){ return r.json(); })
+      .then(function(j){ if(j && j.api) base = j.api; done(); })
+      .catch(function(){ done(); });
+  }
   var ready = new Promise(function(done){
+    if (location.protocol === 'https:') { fromConfig(done); return; }
     var ac = ('AbortController' in window) ? new AbortController() : null;
     var t = setTimeout(function(){ if(ac) ac.abort(); }, 1500);
     _fetch(LOCAL + '/health', ac ? {signal: ac.signal} : {})
       .then(function(r){ return r.json(); })
       .then(function(d){ clearTimeout(t); if(d && d.ok){ done(); } else { throw 0; } })
-      .catch(function(){
-        clearTimeout(t);
-        _fetch('backend.json?t=' + Date.now())
-          .then(function(r){ return r.json(); })
-          .then(function(j){ if(j && j.api) base = j.api; done(); })
-          .catch(function(){ done(); });
-      });
+      .catch(function(){ clearTimeout(t); fromConfig(done); });
   });
   window.fetch = function(u, o){
     if (typeof u === 'string' && u.indexOf(LOCAL) === 0){
