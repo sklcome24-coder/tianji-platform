@@ -879,6 +879,30 @@
               const isDecadeAnalysis = userQ.includes("大運") || userQ.includes("大限") || userQ.includes("十年");
               const starLabel = (s) => `${s.name}${s.hua ? `(生年化${s.hua})` : ''}${s.liuHua ? `(流年化${s.liuHua})` : ''}`;
               const getPalaceStars = (name) => { const p = activeChart.palaces.find(p => p.name === name); if (!p) return "無"; const stars = p.stars.map(starLabel).join("、"); return `${name}宮(干支:${p.gan}${p.zhi}): ${stars || "無主星"}`; };
+              /* 【本命底圖】2026-09-11 立。
+              原本提示詞固定只掃父母／子女／夫妻三宮，加上流年或大限一宮——十二宮裡只有
+              三到五宮的星曜送得到模型，**連本命命宮都不在固定範圍內**，五行局、身宮、
+              大限順逆也一個字都沒送。模型答得出東西，是靠四化飛星總覽回推底圖。
+              這與「陽宅選單模型收不到」「占天時語料有引擎沒接」「玄空當旺星算了不寫進案子檔」
+              同一個病：**確定性層算對了，卻沒把結果交到會用它的那一層手上**。
+              盤是程式算的，底圖就該由程式給，不該讓模型自己湊。 */
+              const 底圖 = (() => {
+              const ming = activeChart.palaces.find(p => p.isMing);
+              const shen = activeChart.palaces.find(p => p.isShen);
+              const dy = activeChart.palaces[activeChart.currentDayunIdx];
+              const bu = activeChart.bureau || {};
+              const L = [];
+              L.push(`- 五行局：${bu.name || '未知'}（起運 ${bu.startAge || '?'} 歲）`);
+              if (ming) L.push(`- 本命命宮：${ming.name}宮（干支 ${ming.gan}${ming.zhi}）　星曜：${ming.stars.map(starLabel).join('、') || '無主星（借對宮論）'}`);
+              if (shen) L.push(`- 身宮：${shen.name}宮（命宮論先天、身宮論後天，兩者並看）`);
+              if (dy) L.push(`- 當前大限：${dy.dayun} 歲，落${dy.name}宮`);
+              return `【本命底圖（程式算出，勿自行推算）】\n${L.join('\n')}`;
+              })();
+              /* 【十二宮星曜表】一行一宮，讓模型看得到整張底圖而不是三宮。 */
+              const 全宮 = `【十二宮星曜】\n` + activeChart.palaces.map(p =>
+              `- ${p.name}宮（${p.gan}${p.zhi}）${p.isMing ? '【命】' : ''}${p.isShen ? '【身】' : ''}`
+              + `${p.dayun ? `[大限 ${p.dayun}]` : ''}：`
+              + (p.stars.map(starLabel).join('、') || '無主星')).join('\n');
               const scanContext = `【六親宮位掃描】\n- ${getPalaceStars('父母')}\n- ${getPalaceStars('子女')}\n- ${getPalaceStars('夫妻')}\n- 當前流年：${activeChart.liunian.year} (${activeChart.liunian.name})`;
               const findStarPalace = (star) => { const p = activeChart.palaces.find(pp => pp.stars.some(s => s.name === star)); return p ? `${star}(在${p.name}宮)` : `${star}(未入盤)`; };
               const huaLine = (gan, label) => { const h = SI_HUA[gan]; if (!h) return ""; return `- ${label}：祿-${findStarPalace(h.lu)}、權-${findStarPalace(h.quan)}、科-${findStarPalace(h.ke)}、忌-${findStarPalace(h.ji)}`; };
@@ -1128,7 +1152,7 @@ ${timeAnchor}
   涉及健康只講象與時間窗，**不作診斷、不勸阻就醫**；有疑慮者請其就醫。
 `;
 
-              return `${timeAnchor}\n----------------\n${coreSystemLogic}\n----------------\n${baziText}\n${scanContext}\n${siHuaContext}\n${chartContext}\n${topicContext}\n${prevDayunContext}\n${divContext}\n${taskInstruction}\n${disasterContext}\n${verificationProtocol}\n${genderRoleProtocol}\n【用戶問題】：${userQ}`;
+              return `${timeAnchor}\n----------------\n${coreSystemLogic}\n----------------\n${baziText}\n${底圖}\n${全宮}\n${scanContext}\n${siHuaContext}\n${chartContext}\n${topicContext}\n${prevDayunContext}\n${divContext}\n${taskInstruction}\n${disasterContext}\n${verificationProtocol}\n${genderRoleProtocol}\n【用戶問題】：${userQ}`;
           };
 
           // Gemini 的 content.parts 是**陣列**，模型可以把回答分成多段回來。
