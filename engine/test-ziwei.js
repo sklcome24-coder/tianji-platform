@@ -187,7 +187,7 @@ console.log('【一】安星口訣對照');
   chk('陽男陰女順、陰男陽女逆', ok, bad.join(' '));
 }
 
-// 晚子時換日（倪師法）：23 時之後算次日
+// 晚子時換日（師承之法）：23 時之後算次日
 {
   const a = E.buildChart({ year: 2000, month: 3, day: 10, hour: 22, minute: 0,
                            gender: 'M', targetYear: 2026 }, { Solar });

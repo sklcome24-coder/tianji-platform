@@ -131,7 +131,7 @@
     const targetYear = parseInt(inputs.targetYear, 10) || new Date().getFullYear();
 
     let solar = Solar.fromYmdHms(year, inputs.month, inputs.day, hour, minute, 0);
-    // 晚子時換日：過了夜間十一點即算次日（倪師法）
+    // 晚子時換日：過了夜間十一點即算次日（師承之法）
     if (hour >= 23) solar = solar.next(1);
     const lunar = solar.getLunar();
 

@@ -108,6 +108,32 @@ def main() -> None:
         if not same:
             PROBLEMS.append(f"{name} 線上與本機不同（線上 {len(live):,} B／本機 {len(mine):,} B）")
 
+    say("\n【四】傳承稱謂（各歸各門，不可互串）")
+    # 2026-09-11：兩個 skill 的 audit 都有稱謂守門，但**這個倉庫不在它們的範圍內**——
+    # engine/ 下兩個檔一直留著舊稱謂到今天才發現。
+    # 分門判定：紫微檔（ziwei*／engine/）不得出現師說那一門的稱謂；
+    # 玄空／六爻頁**本來就是那一門**，寫「混元禪師」是對的，不可一律禁。
+    # 本檔自己要寫出這些詞才能列管，故排除自己（先前一律禁時自己咬自己）。
+    ZW_BAN = ["師父", "混元", "唯心聖教", "師說"]
+    ALL_BAN = ["倪師法"]
+    hits = []
+    for f in HERE.rglob("*"):
+        if not f.is_file() or ".git" in f.parts or f.name == pathlib.Path(__file__).name:
+            continue
+        if f.suffix not in (".js", ".html", ".py", ".md", ".json", ".sh"):
+            continue
+        try:
+            txt = f.read_text(encoding="utf-8", errors="strict")
+        except (UnicodeDecodeError, OSError):
+            continue
+        rel = str(f.relative_to(HERE))
+        bans = list(ALL_BAN) + (ZW_BAN if ("ziwei" in rel or rel.startswith("engine/")) else [])
+        for w in bans:
+            if w in txt:
+                hits.append(f"{rel}：{w} × {txt.count(w)}")
+    say("  ✔ 各歸各門" if not hits else "  ✘ " + "；".join(hits[:5]))
+    PROBLEMS.extend(hits)
+
     if PROBLEMS:
         print(f"\n✘ 線上未同步，共 {len(PROBLEMS)} 項：")
         for x in PROBLEMS:
