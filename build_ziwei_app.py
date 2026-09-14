@@ -43,7 +43,15 @@ OUT = HERE / "ziwei.html"
 ASSETS = HERE / "assets"
 
 EXTERNAL = re.compile(r"https?://(?!127\.0\.0\.1|localhost)[^\s\"'`)]+")
-ALLOW_HOSTS = {"www.w3.org"}          # SVG namespace，不是網路請求
+# 這一關擋的是**載入期依賴**——頁面一開就要向外站取檔，那一站掛了排盤就白畫面
+# （見檔頭：「在人家客廳、在沒訊號的地方也要能開」）。
+# **使用者主動按下去才發的請求不在此列**：沒網路時那個功能不能用，但排盤照樣開得起來。
+# 2026-09-15：TTS 語音朗讀（使用者自備金鑰、按了朗讀才呼叫）曾因此把整個建置擋死，
+# 而它一行都不影響載入。放行，並在這裡寫明判準，免得日後又誤擋或誤放。
+ALLOW_HOSTS = {
+    "www.w3.org",                          # SVG namespace，不是網路請求
+    "generativelanguage.googleapis.com",   # 語音朗讀，執行期選用，非載入依賴
+}
 
 
 def compile_jsx(src_js: str) -> str:

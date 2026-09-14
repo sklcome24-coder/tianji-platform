@@ -40,6 +40,7 @@ PAGES = {
 }
 
 PROBLEMS: list[str] = []
+AGES: dict[str, str] = {}
 
 
 def sha(b: bytes) -> str:
@@ -47,10 +48,18 @@ def sha(b: bytes) -> str:
 
 
 def fetch(name: str, timeout: int = 40) -> bytes | None:
-    # CDN 是 max-age=600，不破快取會拿到十分鐘前的舊檔而誤判成同步。
+    # ⚠ 2026-09-11 實測更正：**?bust= 破不了這個快取**。GitHub Pages 的 CDN
+    # 忽略 query string，也忽略 Cache-Control: no-cache 請求頭——帶 bust=A、
+    # bust=B、完全不帶，三者回的 age 一模一樣（皆 x-cache: HIT）。
+    # 先前註解寫「不破快取會誤判成同步」是錯的，反了：快取只會落後、不會超前，
+    # 所以它造成的是**誤判落後**（安全方向），不會把沒同步的說成同步。
+    # 真正讓新內容立刻可見的是 Pages 部署完成時的 CDN purge，與這個參數無關。
+    # 參數留著無害（省得動三支腳本），但別再以為它有作用。
+    # 一併取回 age，誤判落後時看得出是不是快取造成的。
     url = f"{BASE}/{name}?bust={int(time.time())}"
     try:
         with urllib.request.urlopen(url, timeout=timeout) as r:
+            AGES[name] = r.headers.get("age", "?")
             return r.read()
     except Exception as e:                                   # noqa: BLE001
         PROBLEMS.append(f"{name}：抓不到線上檔（{type(e).__name__}）")
