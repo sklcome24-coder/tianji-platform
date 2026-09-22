@@ -765,6 +765,11 @@ function ZiweiYiDivine() {
   const needsAnswer = s => /[？?]/.test(String(s || "")) || /(請問|驗證|請先?告知|請提供|請確認|請回覆|請核對|先行回覆|麻煩告知|以利定盤)/.test(String(s || "")); /* 2026-09-10：模型會連問號都不寫（「請先告知：…」），故放寬到索取資訊的說法。 陽宅那條路已改由按鈕旗標決定，這裡只是其他路徑的後備。 */
   const [yzPerson, setYzPerson] = useState("");
   const [yzDir, setYzDir] = useState("");
+  /* 【定盤與居住合併成一則】2026-09-22：居住那關是按鈕（必觸發）、定盤只是提示詞（勸告性），
+     兩個「問完就停」互相排擠，實測是居住問了、定盤沒問。三格一次收。 */
+  const [yzDing, setYzDing] = useState("");
+  const YZ_DING = ["對，那年確實發生", "不對，沒這回事", "不確定／記不清"];
+  const [dingDone, setDingDone] = useState(false);
   const YZ_PEOPLE = ["父（乾）", "母（坤）", "長男（震）", "長女（巽）", "次男（坎）", "次女（離）", "少男（艮）", "少女（兌）"];
   const YZ_DIRS = ["西北（乾）", "西南（坤）", "正東（震）", "東南（巽）", "正北（坎）", "正南（離）", "東北（艮）", "正西（兌）"];
   // 【只拿「以問號結尾的子句」來判，不看整段】2026-09-10 第四次修。
@@ -798,7 +803,7 @@ function ZiweiYiDivine() {
     const desc = typeof TIAN_JI_FULL_TEXT !== "undefined" && TIAN_JI_FULL_TEXT[h.name] || "";
     return `\n【陽宅成卦（程式算出，不可自行推算或改判）】\n` + `- 上卦（居住者）：${person}　下卦（房間方位）：${dir}\n` + `- 成卦：**${h.name}**（周易第 ${h.id} 卦）\n` + (desc ? `- 此卦圖象原文：${desc}\n` : "") + `**必須據此卦之象作答**：先說成的是哪一卦、上下卦各代表誰與哪個方位，\n` + `再讀此卦之象，並**逐句扣回本案**——扣回這位居住者、這個方位、以及他問的那件事，\n` + `不可只寫「此卦吉／凶」了事，也不可拿卦名當裝飾而內容與卦意無關。\n`;
   };
-  const composeYz = (person, dir) => (person ? `我是${person}` : "") + (dir ? (person ? "，" : "") + `住${dir}的房間` : "");
+  const composeYz = (person, dir, ding) => (ding ? `（定盤：${ding}）` : "") + (person ? `我是${person}` : "") + (dir ? (person ? "，" : "") + `住${dir}的房間` : "");
   const [disasterFlags, setDisasterFlags] = useState([]);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [userApiKey, setUserApiKey] = useState("");
@@ -1318,10 +1323,13 @@ function ZiweiYiDivine() {
     const parentMsg = chatHistory[parentMsgIndex];
     // 成卦要在清空兩個下拉「之前」算——順序顛倒就取到空字串，卦算不出來。
     const yzHex = yzHexContext(yzPerson, yzDir);
+    const dingRule = yzDing.startsWith("不對") ? `\n【定盤結果（使用者作答，確定性）】不對——那一年沒發生。\n- **指令**：本則只講「時辰可能有誤」，請他回去確認出生證明或問長輩。\n- **禁止**：不得給陽宅配置建議、不得斷流年吉凶——盤未定之前，依盤而來的建議都不算數。` : yzDing ? `\n【定盤結果（使用者作答，確定性）】${yzDing}——可接續論斷。${yzDing.startsWith("不確定") ? "請在回覆開頭一句話註明「此盤尚未經往事確認」。" : ""}` : "";
     const combinedContext = `【用戶針對前一輪提問的回饋】\n- 原問題背景：${parentMsg.text} (上下文)\n- 用戶回答：${answer}\n- 系統指令：請根據用戶確認的「事實」，對命盤進行最終校準與解說。` + yzHex;
     setInteractiveInput("");
     setYzPerson("");
     setYzDir("");
+    if (yzDing && !yzDing.startsWith("不對")) setDingDone(true);
+    setYzDing("");
     const newHistory = [...chatHistory, {
       type: 'user',
       text: `(回覆系統提問) ${answer}`,
@@ -1618,6 +1626,10 @@ ${timeAnchor}
   2026-09-06 實例：先寫「如果您是家中長子⋯⋯請務必確認自己住在正東方」，
   給完一整段配置建議，最後一行才問「請問您是家中長子嗎？」——
   那不是先問，那是先斷後問。**條件未確認就不要給依該條件而來的建議。**
+  **⛔ 這一則要連定盤一起問（2026-09-22 起）**：陽宅這一問若是本盤的第一次互動，
+  同一則裡要**先**問第二步的定盤驗證那一年（一句），**再**問誰住／哪個方位（一句），
+  兩件事一次問完就停。app 會同時開出「定盤／六親／方位」三個選單一起收。
+  定盤答「不對」時，下一則只講時辰可能有誤，不給陽宅建議。
 - **成卦法：上卦看人、下卦看方位。** 居住者名份為外卦、房間方位為內卦，上下相疊即成卦，
   讀其卦意即得吉凶。人：父乾、母坤、長男震、長女巽、次男坎、次女離、少男艮、少女兌；
   方位：西北乾、西南坤、正東震、東南巽、正北坎、正南離、東北艮、正西兌。
@@ -2783,13 +2795,25 @@ ${timeAnchor}
     size: 12
   }), " ", msg.yzMode || isYzAsk(msg.text) ? "請回答上面的提問：" : "請回饋事實，以利定盤："), /*#__PURE__*/React.createElement("div", {
     className: "flex flex-wrap gap-2"
-  }, (msg.yzMode || isYzAsk(msg.text)) && /*#__PURE__*/React.createElement("div", {
+  }, (msg.yzMode || isYzAsk(msg.text)) && !dingDone && /*#__PURE__*/React.createElement("select", {
+    value: yzDing,
+    onChange: e => {
+      setYzDing(e.target.value);
+      setInteractiveInput(composeYz(yzPerson, yzDir, e.target.value));
+    },
+    className: "w-full text-xs border border-green-300 rounded px-2 py-1 mb-2 bg-white focus:outline-none focus:border-green-500"
+  }, /*#__PURE__*/React.createElement("option", {
+    value: ""
+  }, "\u5148\u5B9A\u76E4\uFF1A\u4E0A\u9762\u554F\u7684\u90A3\u4E00\u5E74\u2026"), YZ_DING.map(x => /*#__PURE__*/React.createElement("option", {
+    key: x,
+    value: x
+  }, x))), (msg.yzMode || isYzAsk(msg.text)) && /*#__PURE__*/React.createElement("div", {
     className: "flex gap-2 w-full"
   }, /*#__PURE__*/React.createElement("select", {
     value: yzPerson,
     onChange: e => {
       setYzPerson(e.target.value);
-      setInteractiveInput(composeYz(e.target.value, yzDir));
+      setInteractiveInput(composeYz(e.target.value, yzDir, yzDing));
     },
     className: "flex-1 text-xs border border-green-300 rounded px-2 py-1 bg-white focus:outline-none focus:border-green-500"
   }, /*#__PURE__*/React.createElement("option", {
@@ -2801,7 +2825,7 @@ ${timeAnchor}
     value: yzDir,
     onChange: e => {
       setYzDir(e.target.value);
-      setInteractiveInput(composeYz(yzPerson, e.target.value));
+      setInteractiveInput(composeYz(yzPerson, e.target.value, yzDing));
     },
     className: "flex-1 text-xs border border-green-300 rounded px-2 py-1 bg-white focus:outline-none focus:border-green-500"
   }, /*#__PURE__*/React.createElement("option", {

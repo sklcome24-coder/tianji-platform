@@ -497,6 +497,11 @@
           const needsAnswer = (s) => /[？?]/.test(String(s || "")) || /(請問|驗證|請先?告知|請提供|請確認|請回覆|請核對|先行回覆|麻煩告知|以利定盤)/.test(String(s || ""));  /* 2026-09-10：模型會連問號都不寫（「請先告知：…」），故放寬到索取資訊的說法。 陽宅那條路已改由按鈕旗標決定，這裡只是其他路徑的後備。 */
           const [yzPerson, setYzPerson] = useState("");
           const [yzDir, setYzDir] = useState("");
+          /* 【定盤與居住合併成一則】2026-09-22：居住那關是按鈕（必觸發）、定盤只是提示詞（勸告性），
+             兩個「問完就停」互相排擠，實測是居住問了、定盤沒問。三格一次收。 */
+          const [yzDing, setYzDing] = useState("");
+          const YZ_DING = ["對，那年確實發生", "不對，沒這回事", "不確定／記不清"];
+          const [dingDone, setDingDone] = useState(false);
           const YZ_PEOPLE = ["父（乾）","母（坤）","長男（震）","長女（巽）","次男（坎）","次女（離）","少男（艮）","少女（兌）"];
           const YZ_DIRS = ["西北（乾）","西南（坤）","正東（震）","東南（巽）","正北（坎）","正南（離）","東北（艮）","正西（兌）"];
           // 【只拿「以問號結尾的子句」來判，不看整段】2026-09-10 第四次修。
@@ -526,7 +531,7 @@
               + `再讀此卦之象，並**逐句扣回本案**——扣回這位居住者、這個方位、以及他問的那件事，\n`
               + `不可只寫「此卦吉／凶」了事，也不可拿卦名當裝飾而內容與卦意無關。\n`;
           };
-          const composeYz = (person, dir) => (person ? `我是${person}` : "") + (dir ? (person ? "，" : "") + `住${dir}的房間` : ""); 
+          const composeYz = (person, dir, ding) => (ding ? `（定盤：${ding}）` : "") + (person ? `我是${person}` : "") + (dir ? (person ? "，" : "") + `住${dir}的房間` : ""); 
           const [disasterFlags, setDisasterFlags] = useState([]); 
           const [isSettingsOpen, setIsSettingsOpen] = useState(false);
           const [userApiKey, setUserApiKey] = useState("");
@@ -795,8 +800,13 @@
               const parentMsg = chatHistory[parentMsgIndex];
               // 成卦要在清空兩個下拉「之前」算——順序顛倒就取到空字串，卦算不出來。
               const yzHex = yzHexContext(yzPerson, yzDir);
+              const dingRule = yzDing.startsWith("不對")
+                ? `\n【定盤結果（使用者作答，確定性）】不對——那一年沒發生。\n- **指令**：本則只講「時辰可能有誤」，請他回去確認出生證明或問長輩。\n- **禁止**：不得給陽宅配置建議、不得斷流年吉凶——盤未定之前，依盤而來的建議都不算數。`
+                : (yzDing ? `\n【定盤結果（使用者作答，確定性）】${yzDing}——可接續論斷。${yzDing.startsWith("不確定") ? "請在回覆開頭一句話註明「此盤尚未經往事確認」。" : ""}` : "");
               const combinedContext = `【用戶針對前一輪提問的回饋】\n- 原問題背景：${parentMsg.text} (上下文)\n- 用戶回答：${answer}\n- 系統指令：請根據用戶確認的「事實」，對命盤進行最終校準與解說。` + yzHex;
-              setInteractiveInput(""); setYzPerson(""); setYzDir(""); 
+              setInteractiveInput(""); setYzPerson(""); setYzDir("");
+              if (yzDing && !yzDing.startsWith("不對")) setDingDone(true);
+              setYzDing(""); 
               const newHistory = [...chatHistory, { type: 'user', text: `(回覆系統提問) ${answer}`, isFollowUp: true }];
               setChatHistory(newHistory); setIsLoading(true);
               try {
@@ -1046,6 +1056,10 @@ ${timeAnchor}
   2026-09-06 實例：先寫「如果您是家中長子⋯⋯請務必確認自己住在正東方」，
   給完一整段配置建議，最後一行才問「請問您是家中長子嗎？」——
   那不是先問，那是先斷後問。**條件未確認就不要給依該條件而來的建議。**
+  **⛔ 這一則要連定盤一起問（2026-09-22 起）**：陽宅這一問若是本盤的第一次互動，
+  同一則裡要**先**問第二步的定盤驗證那一年（一句），**再**問誰住／哪個方位（一句），
+  兩件事一次問完就停。app 會同時開出「定盤／六親／方位」三個選單一起收。
+  定盤答「不對」時，下一則只講時辰可能有誤，不給陽宅建議。
 - **成卦法：上卦看人、下卦看方位。** 居住者名份為外卦、房間方位為內卦，上下相疊即成卦，
   讀其卦意即得吉凶。人：父乾、母坤、長男震、長女巽、次男坎、次女離、少男艮、少女兌；
   方位：西北乾、西南坤、正東震、東南巽、正北坎、正南離、東北艮、正西兌。
@@ -1438,7 +1452,7 @@ ${timeAnchor}
                                       </div>
                                       <div className="whitespace-pre-wrap">{msg.text}</div>
                                       {msg.divination && ( <div className="mt-2 flex gap-2"><button onClick={() => setIsImageModalOpen(true)} className="text-[10px] flex items-center gap-1 text-blue-600 hover:underline bg-blue-50 px-2 py-1 rounded"><ImageIcon size={12}/> 點此查看【{msg.divination.ben.name}】原圖</button></div> )}
-                                      {msg.type === 'bot' && msg.needsInteraction && !chatHistory[idx + 1] && ( <div className="mt-3 bg-green-50 border border-green-200 p-2 rounded-lg animate-in slide-in-from-top-2"><div className="text-xs font-bold text-green-800 mb-1 flex items-center gap-1"><CheckSquare size={12}/> {(msg.yzMode || isYzAsk(msg.text)) ? "請回答上面的提問：" : "請回饋事實，以利定盤："}</div><div className="flex flex-wrap gap-2">{(msg.yzMode || isYzAsk(msg.text)) && ( <div className="flex gap-2 w-full"><select value={yzPerson} onChange={(e) => { setYzPerson(e.target.value); setInteractiveInput(composeYz(e.target.value, yzDir)); }} className="flex-1 text-xs border border-green-300 rounded px-2 py-1 bg-white focus:outline-none focus:border-green-500"><option value="">居住者（六親）…</option>{YZ_PEOPLE.map(x => <option key={x} value={x}>{x}</option>)}</select><select value={yzDir} onChange={(e) => { setYzDir(e.target.value); setInteractiveInput(composeYz(yzPerson, e.target.value)); }} className="flex-1 text-xs border border-green-300 rounded px-2 py-1 bg-white focus:outline-none focus:border-green-500"><option value="">房間方位…</option>{YZ_DIRS.map(x => <option key={x} value={x}>{x}</option>)}</select></div> )}<input type="text" placeholder={(msg.yzMode || isYzAsk(msg.text)) ? "例如：長子，住正東那間..." : "例如：是，去年八月確實發生過..."} className="flex-1 text-xs border border-green-300 rounded px-2 py-1 focus:outline-none focus:border-green-500" value={interactiveInput} onChange={(e) => setInteractiveInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleInteractiveSubmit(interactiveInput, idx)} /><button onClick={() => handleInteractiveSubmit(interactiveInput, idx)} className="bg-green-600 text-white text-xs px-3 py-1 rounded hover:bg-green-700 transition-colors">確認</button></div></div> )}
+                                      {msg.type === 'bot' && msg.needsInteraction && !chatHistory[idx + 1] && ( <div className="mt-3 bg-green-50 border border-green-200 p-2 rounded-lg animate-in slide-in-from-top-2"><div className="text-xs font-bold text-green-800 mb-1 flex items-center gap-1"><CheckSquare size={12}/> {(msg.yzMode || isYzAsk(msg.text)) ? "請回答上面的提問：" : "請回饋事實，以利定盤："}</div><div className="flex flex-wrap gap-2">{(msg.yzMode || isYzAsk(msg.text)) && !dingDone && ( <select value={yzDing} onChange={(e) => { setYzDing(e.target.value); setInteractiveInput(composeYz(yzPerson, yzDir, e.target.value)); }} className="w-full text-xs border border-green-300 rounded px-2 py-1 mb-2 bg-white focus:outline-none focus:border-green-500"><option value="">先定盤：上面問的那一年…</option>{YZ_DING.map(x => <option key={x} value={x}>{x}</option>)}</select> )}{(msg.yzMode || isYzAsk(msg.text)) && ( <div className="flex gap-2 w-full"><select value={yzPerson} onChange={(e) => { setYzPerson(e.target.value); setInteractiveInput(composeYz(e.target.value, yzDir, yzDing)); }} className="flex-1 text-xs border border-green-300 rounded px-2 py-1 bg-white focus:outline-none focus:border-green-500"><option value="">居住者（六親）…</option>{YZ_PEOPLE.map(x => <option key={x} value={x}>{x}</option>)}</select><select value={yzDir} onChange={(e) => { setYzDir(e.target.value); setInteractiveInput(composeYz(yzPerson, e.target.value, yzDing)); }} className="flex-1 text-xs border border-green-300 rounded px-2 py-1 bg-white focus:outline-none focus:border-green-500"><option value="">房間方位…</option>{YZ_DIRS.map(x => <option key={x} value={x}>{x}</option>)}</select></div> )}<input type="text" placeholder={(msg.yzMode || isYzAsk(msg.text)) ? "例如：長子，住正東那間..." : "例如：是，去年八月確實發生過..."} className="flex-1 text-xs border border-green-300 rounded px-2 py-1 focus:outline-none focus:border-green-500" value={interactiveInput} onChange={(e) => setInteractiveInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleInteractiveSubmit(interactiveInput, idx)} /><button onClick={() => handleInteractiveSubmit(interactiveInput, idx)} className="bg-green-600 text-white text-xs px-3 py-1 rounded hover:bg-green-700 transition-colors">確認</button></div></div> )}
                                   </div>
                               </div>
                           ))}
