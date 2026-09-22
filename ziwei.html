@@ -714,6 +714,14 @@ function ZiweiYiDivine() {
   const [birthDay, setBirthDay] = useState(1);
   const [birthTimeStr, setBirthTimeStr] = useState("00:00");
   const [gender, setGender] = useState('M');
+  /* 【婚姻狀態不由模型猜】2026-09-22：未婚者被回「你妻子怎樣怎樣」。
+     盤說的是婚緣之象，不是「你太太如何」。未設定時提示詞硬禁預設已婚。 */
+  const [marital, setMarital] = useState('');
+  const MARITAL_LABEL = {
+    '': '婚姻未填',
+    single: '未婚',
+    married: '已婚'
+  };
   const [targetYear, setTargetYear] = useState(new Date().getFullYear().toString());
   const [chart, setChart] = useState(null);
   const [chatHistory, setChatHistory] = useState([]);
@@ -1301,9 +1309,11 @@ function ZiweiYiDivine() {
           text: `您好，我是『小助理迷天紀』。本系統依循紫微斗數與梅花易數之古典邏輯為您推演。為求精準，點評前將會先與您核對命盤基本資訊與過往運勢。請直說您想問的事，或是輸入您的生辰。`
         }].concat(_lyNew ? [{
           type: 'bot',
+          kind: 'liuyue',
           text: _liuyueText
-        }] : []));else if (_lyNew) setChatHistory(prev => prev.some(m => m.text === _liuyueText) ? prev : prev.concat([{
+        }] : []));else if (_lyNew) setChatHistory(prev => prev.filter(m => m.kind !== 'liuyue').concat([{
           type: 'bot',
+          kind: 'liuyue',
           text: _liuyueText
         }]));
       }
@@ -1571,7 +1581,8 @@ function ZiweiYiDivine() {
 `;
     const verificationProtocol = `【🔍 師承定盤/驗證標準程序 (Protocol v24.21)】\n1. **年初修正**：目前系統設定驗證年份為 **${verificationYear}年 (${verificationType})**。\n   - 請詢問這一年是否有發生命盤顯示的「化忌/沖照」事件。\n2. **雙重鎖定 (Fallback)**：\n   - 若用戶否認 ${verificationYear} 年的事件。\n   - **指令**：請退一步，驗證「上一個大限」：${prevDayunContext}。\n   - 這是定盤的關鍵，若兩個都對不上，請直說「時辰可能錯誤」。`;
     const gender = activeChart.userInfo.g;
-    const genderRoleProtocol = `【👫 性別與角色校正協議】\n- 命主為${gender === 'M' ? '乾造 (男)' : '坤造 (女)'}。\n- 夫妻宮指${gender === 'M' ? '妻子' : '丈夫'}。`;
+    const _spouseWord = gender === 'M' ? '妻' : '夫';
+    const genderRoleProtocol = `【👫 性別與角色校正協議】\n- 命主為${gender === 'M' ? '乾造 (男)' : '坤造 (女)'}。\n` + (marital === 'married' ? `- 命主**已婚**，夫妻宮所指即其${_spouseWord}。` : marital === 'single' ? `- 命主**未婚**。夫妻宮講的是**未來配偶與婚緣之象**，**嚴禁**出現「您的${_spouseWord}子」「您太太」「您先生」這類把人講成已存在的說法。` : `- **婚姻狀態未提供。嚴禁預設已婚或未婚。**夫妻宮一律講「配偶／未來配偶」與婚緣之象；若該宮是本次提問重點，**先問清楚再往下說**。`) + `\n- 同理，子女宮不預設已有子女、田宅宮不預設已購屋。`;
 
     // 【核心修正】梅易讀圖解卦口訣對應
     const hexName = result.ben.name;
@@ -2601,7 +2612,11 @@ ${timeAnchor}
   }) : /*#__PURE__*/React.createElement(UserCheck, {
     size: 12,
     className: "text-red-600"
-  }), " ", gender === 'M' ? '乾造(男)' : '坤造(女)')), /*#__PURE__*/React.createElement("div", {
+  }), " ", gender === 'M' ? '乾造(男)' : '坤造(女)'), /*#__PURE__*/React.createElement("button", {
+    onClick: () => setMarital(m => m === '' ? 'single' : m === 'single' ? 'married' : ''),
+    title: "\u672A\u586B\u6642\u4E0D\u6703\u9810\u8A2D\u60A8\u5DF2\u5A5A",
+    className: "font-bold bg-stone-100 px-2 rounded border border-stone-300 ml-1"
+  }, MARITAL_LABEL[marital])), /*#__PURE__*/React.createElement("div", {
     className: "flex items-center gap-1"
   }, /*#__PURE__*/React.createElement("span", {
     className: "font-bold text-red-800"
