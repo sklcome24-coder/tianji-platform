@@ -753,11 +753,73 @@
                         if (criticalPalaces.includes(oppositePalace.name)) alertFlags.push({ type: 'critical', msg: `流年化忌(${huaJiStar})在【${huaJiPalace.name}】沖本命【${oppositePalace.name}】——沖者力顯於對宮，該宮所繫之人事今年宜格外留心。` });
                     }
                 }
-                /* 月層警訊：年層說「今年」，這一層說「幾月」。 */
-                const monthCritical = ['父母', '夫妻', '子女', '疾厄', '命宮', '財帛'];
-                liuYue.forEach(ly => { const ji = ly.四化 && ly.四化.ji; if (!ji) return; const pal = palaces.find(p => p.stars.some(s => s.name === ji)); if (!pal) return; const opp = palaces[(pal.id + 6) % 12];
-                  if (monthCritical.includes(pal.name)) alertFlags.push({ type: 'month', msg: `流月化忌(${ji})於**${ly.月}月**入【${pal.name}】（該月斗君行至${ly.宮}）——此月於該宮所繫之事宜先作準備、避開可避之險。` });
-                  else if (monthCritical.includes(opp.name)) alertFlags.push({ type: 'month', msg: `流月化忌(${ji})於**${ly.月}月**在【${pal.name}】沖【${opp.name}】——沖者力顯於對宮，此月該方面宜預留餘裕。` }); });
+      /* 月層警訊：依化忌之**力量**分級，不是每個月都報。
+         2026-09-22 來福：「當以化忌力量強大為量，應在何人何事為荷，不該每個月份都注意……
+         好像每月都要注意，等於沒注意。」——對。上一版十二個月報出十個，等於沒報。
+         **分級判準取自賦文，不是我自訂：**
+           問-479「二限太歲交臨，斷然蹭蹬」→ 疊忌（月忌撞生年忌或流年忌、或與流年忌同宮）最重
+           問-482「與忌同宮又兼四殺共處」、問-483「單逢四殺、耗使、劫空，主奔波帶疾」→ 忌＋煞加重
+           問-485「處事只求七分」→ 不必把每個月都講死
+         命宮、疾厄屬性命攸關，另加重；只發「重」級，重級不足二則才補「中」級，最多四則。 */
+      const SHA_STARS = ['擎羊', '陀羅', '火星', '鈴星', '地空', '地劫'];
+      const PALACE_MATTER = {
+        命宮: '本人、整體處境', 疾厄: '身體與意外', 父母: '父母、長輩、上司',
+        夫妻: '配偶與感情', 子女: '子女、晚輩', 財帛: '錢財進出',
+        兄弟: '手足、合夥', 田宅: '家宅、不動產', 官祿: '事業、職務',
+        交友: '朋友、部屬', 遷移: '外出、遠行', 福德: '心緒、享用'
+      };
+      const PALACE_PERSON = {
+        父母: '父母（長輩）', 夫妻: '配偶', 子女: '子女', 兄弟: '手足',
+        命宮: '本人', 疾厄: '本人（身體）', 財帛: '本人（財）', 交友: '朋友部屬'
+      };
+      const monthRaw = [];
+      liuYue.forEach(ly => {
+        const ji = ly.四化 && ly.四化.ji;
+        if (!ji) return;
+        const pal = palaces.find(p => p.stars.some(s => s.name === ji));
+        if (!pal) return;
+        const opp = palaces[(pal.id + 6) % 12];
+        const star = pal.stars.find(s => s.name === ji) || {};
+        const 疊生年 = star.hua === '忌';
+        const 疊流年 = star.liuHua === '忌';
+        const 流年忌同宮 = pal.stars.some(s => s.liuHua === '忌');
+        const shas = pal.stars.filter(s => SHA_STARS.includes(s.name)).map(s => s.name);
+        const 攸關 = ['命宮', '疾厄'].includes(pal.name) || ['命宮', '疾厄'].includes(opp.name);
+        let w = 0, why = [];
+        if (疊生年 || 疊流年 || 流年忌同宮) {
+          w += 3;
+          why.push('疊忌（問-479「二限太歲交臨，斷然蹭蹬」）');
+        }
+        if (攸關) { w += 2; why.push('落命宮／疾厄，性命攸關'); }
+        if (shas.length) {
+          w += Math.min(shas.length, 2);
+          why.push(`同宮見${shas.join('、')}（問-482、問-483「主奔波帶疾」）`);
+        }
+        if (!w && !monthCriticalHas(pal.name, opp.name)) return;
+        const 主宮 = monthCriticalHas(pal.name) ? pal : (monthCriticalHas(opp.name) ? opp : pal);
+        const 沖 = 主宮 !== pal;
+        monthRaw.push({
+          月: ly.月, 力: w, 宮: pal.name, 對宮: opp.name, 沖: 沖,
+          人: PALACE_PERSON[主宮.name] || '家中該宮所繫之人',
+          事: PALACE_MATTER[主宮.name] || '該宮所繫之事',
+          因: why, 星: ji, 斗君: ly.宮
+        });
+      });
+      function monthCriticalHas(...names) {
+        const C = ['父母', '夫妻', '子女', '疾厄', '命宮', '財帛'];
+        return names.some(n => C.includes(n));
+      }
+      monthRaw.sort((a, b) => b.力 - a.力 || a.月 - b.月);
+      const 重 = monthRaw.filter(m => m.力 >= 3);
+      const 選 = (重.length >= 2 ? 重 : monthRaw.slice(0, 2)).slice(0, 4);
+      選.forEach(m => alertFlags.push({
+        type: 'month',
+        level: m.力 >= 3 ? '重' : '中',
+        msg: `**${m.月}月**（${m.力 >= 3 ? '最要緊' : '次要'}）　流月化忌(${m.星})`
+             + (m.沖 ? `在【${m.宮}】沖【${m.對宮}】` : `入【${m.宮}】`)
+             + `　應在：**${m.人}**／${m.事}。`
+             + (m.因.length ? `　何以為重：${m.因.join('；')}。` : '')
+      }));
 
                 const calculatedChart = { palaces, douJun: { 宮位序: douJunIdx, 宮: palaces[douJunIdx].name, 出處: '《紫微斗數全書》卷二〈安斗君訣〉' }, liuYue, yearGan: TIAN_GAN[yearGanIdx], yearZhi: DI_ZHI[yearZhiIdx], bureauInfo, mingPos, userInfo: { g: inputs.gender, age: age }, currentDayunIdx, prevDayunIdx, liunian: { year: safeTargetYear, zhiIdx: targetZhiIdx, name: `${targetYearGan}${DI_ZHI[targetZhiIdx]}`, palaceName: palaces[targetZhiIdx].name }, alertFlags };
                 if (!returnOnly) {
@@ -765,7 +827,15 @@
                     /* 【流月發成對話訊息】2026-09-22 來福定案：「將她顯示在對話裡面就好了」。
                  盤面那個 9px 紅框放不下十餘條；對話區字級正常、可捲動。此則不打模型、不花錢。 */
               const _monthMsgs = alertFlags.filter(f => f.type === 'month');
-              const _liuyueText = _monthMsgs.length ? (`【${safeTargetYear} 年流月提醒】共 ${_monthMsgs.length} 個月份（農曆），由斗君順行十二宮算出（《紫微斗數全書》卷二〈安斗君訣〉）：\n\n` + _monthMsgs.map(f => '· ' + String(f.msg).replace(/[*][*]/g, '')).join('\n') + `\n\n提早知道月份，才排得開行程、緩得了決定——這是時點提醒，不是斷定某月必出何事。想細問哪一個月，直接問我。`) : "";
+              const _liuyueText = _monthMsgs.length ? (`【${safeTargetYear} 年要留意的月份】（農曆，斗君順行十二宮算出，`
+          + `《紫微斗數全書》卷二〈安斗君訣〉）\n`
+          + `十二個月裡只挑化忌力量真正重的 ${_monthMsgs.length} 個——`
+          + `每個月都要注意，等於沒注意。\n\n`
+          + _monthMsgs.map(f => '· ' + String(f.msg).replace(/[*][*]/g, '')).join('\n')
+          + `\n\n力量判準出自賦文：疊忌（問-479「二限太歲交臨，斷然蹭蹬」）、`
+          + `忌與四殺同宮（問-482、問-483「主奔波帶疾」），落命宮或疾厄者另計性命攸關。`
+          + `\n這是時點與所應之人事，不是斷定某月必出何禍（問-485「處事只求七分」）。`
+          + `陽宅佈局要下重手的，就下在這幾個月所指的方位與人身上。想細問哪一個月，直接問我。`) : "";
               if (chatHistory.length === 0 && !overrideInputs) setChatHistory([{ type: 'bot', text: `您好，我是『小助理迷天紀』。本系統依循紫微斗數與梅花易數之古典邏輯為您推演。為求精準，點評前將會先與您核對命盤基本資訊與過往運勢。請直說您想問的事，或是輸入您的生辰。` }].concat(_liuyueText ? [{ type: 'bot', text: _liuyueText }] : []));
               else if (_liuyueText) setChatHistory(prev => prev.concat([{ type: 'bot', text: _liuyueText }]));
                 }
