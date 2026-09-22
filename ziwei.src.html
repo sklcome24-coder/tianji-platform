@@ -735,18 +735,31 @@
                     });
                 }));
 
+                /* —— 流月：斗君起正月順行十二宮（2026-09-22）。急災原本只算到「年」，講不出幾月，
+                   提醒等於整年都要小心。起法照《紫微斗數全書》卷二〈安斗君訣〉，月干依五虎遁。 */
+                const mod12n = n => ((n % 12) + 12) % 12;
+                const douJunIdx = mod12n(targetZhiIdx - (lunarMonth - 1) + timeZhiIdx);
+                const YIN_GAN_START = { '甲': 2, '己': 2, '乙': 4, '庚': 4, '丙': 6, '辛': 6, '丁': 8, '壬': 8, '戊': 0, '癸': 0 };
+                const liuYue = [];
+                for (let m = 1; m <= 12; m++) { const pIdx = mod12n(douJunIdx + (m - 1)); const gan = TIAN_GAN[((YIN_GAN_START[targetYearGan] + m - 1) % 10 + 10) % 10]; liuYue.push({ 月: m, 宮: palaces[pIdx].name, 宮位序: pIdx, 月干: gan, 四化: SI_HUA[gan] || null }); }
                 const huaJiStar = SI_HUA[targetYearGan]?.ji;
                 const alertFlags = [];
                 if (huaJiStar) {
                     const huaJiPalace = palaces.find(p => p.stars.some(s => s.name === huaJiStar));
                     if (huaJiPalace) {
-                        const criticalPalaces = ['父母', '夫妻', '子女'];
+                        const criticalPalaces = ['父母', '夫妻', '子女', '疾厄', '命宮', '財帛'];  // 2026-09-22 三宮→六宮
                         if (criticalPalaces.includes(huaJiPalace.name)) alertFlags.push({ type: 'danger', msg: `流年化忌(${huaJiStar})入本命【${huaJiPalace.name}】——賦文於此主該宮所繫之人事宜審慎，今年於此一方面宜多留心、勿躁進。` });
                         const oppositePalace = palaces[(huaJiPalace.id + 6) % 12];
                         if (criticalPalaces.includes(oppositePalace.name)) alertFlags.push({ type: 'critical', msg: `流年化忌(${huaJiStar})在【${huaJiPalace.name}】沖本命【${oppositePalace.name}】——沖者力顯於對宮，該宮所繫之人事今年宜格外留心。` });
                     }
                 }
-                const calculatedChart = { palaces, yearGan: TIAN_GAN[yearGanIdx], yearZhi: DI_ZHI[yearZhiIdx], bureauInfo, mingPos, userInfo: { g: inputs.gender, age: age }, currentDayunIdx, prevDayunIdx, liunian: { year: safeTargetYear, zhiIdx: targetZhiIdx, name: `${targetYearGan}${DI_ZHI[targetZhiIdx]}`, palaceName: palaces[targetZhiIdx].name }, alertFlags };
+                /* 月層警訊：年層說「今年」，這一層說「幾月」。 */
+                const monthCritical = ['父母', '夫妻', '子女', '疾厄', '命宮', '財帛'];
+                liuYue.forEach(ly => { const ji = ly.四化 && ly.四化.ji; if (!ji) return; const pal = palaces.find(p => p.stars.some(s => s.name === ji)); if (!pal) return; const opp = palaces[(pal.id + 6) % 12];
+                  if (monthCritical.includes(pal.name)) alertFlags.push({ type: 'month', msg: `流月化忌(${ji})於**${ly.月}月**入【${pal.name}】（該月斗君行至${ly.宮}）——此月於該宮所繫之事宜先作準備、避開可避之險。` });
+                  else if (monthCritical.includes(opp.name)) alertFlags.push({ type: 'month', msg: `流月化忌(${ji})於**${ly.月}月**在【${pal.name}】沖【${opp.name}】——沖者力顯於對宮，此月該方面宜預留餘裕。` }); });
+
+                const calculatedChart = { palaces, douJun: { 宮位序: douJunIdx, 宮: palaces[douJunIdx].name, 出處: '《紫微斗數全書》卷二〈安斗君訣〉' }, liuYue, yearGan: TIAN_GAN[yearGanIdx], yearZhi: DI_ZHI[yearZhiIdx], bureauInfo, mingPos, userInfo: { g: inputs.gender, age: age }, currentDayunIdx, prevDayunIdx, liunian: { year: safeTargetYear, zhiIdx: targetZhiIdx, name: `${targetYearGan}${DI_ZHI[targetZhiIdx]}`, palaceName: palaces[targetZhiIdx].name }, alertFlags };
                 if (!returnOnly) {
                     setChart(calculatedChart); setDisasterFlags(alertFlags); 
                     if (chatHistory.length === 0 && !overrideInputs) setChatHistory([{ type: 'bot', text: `您好，我是『小助理迷天紀』。本系統依循紫微斗數與梅花易數之古典邏輯為您推演。為求精準，點評前將會先與您核對命盤基本資訊與過往運勢。請直說您想問的事，或是輸入您的生辰。` }]);
