@@ -1214,10 +1214,20 @@ function ZiweiYiDivine() {
       if (!returnOnly) {
         setChart(calculatedChart);
         setDisasterFlags(alertFlags);
+        /* 【流月發成對話訊息】2026-09-22 來福定案：「將她顯示在對話裡面就好了」。
+        盤面那個 9px 紅框放不下十餘條；對話區字級正常、可捲動。此則不打模型、不花錢。 */
+        const _monthMsgs = alertFlags.filter(f => f.type === 'month');
+        const _liuyueText = _monthMsgs.length ? `【${safeTargetYear} 年流月提醒】共 ${_monthMsgs.length} 個月份（農曆），由斗君順行十二宮算出（《紫微斗數全書》卷二〈安斗君訣〉）：\n\n` + _monthMsgs.map(f => '· ' + String(f.msg).replace(/[*][*]/g, '')).join('\n') + `\n\n提早知道月份，才排得開行程、緩得了決定——這是時點提醒，不是斷定某月必出何事。想細問哪一個月，直接問我。` : "";
         if (chatHistory.length === 0 && !overrideInputs) setChatHistory([{
           type: 'bot',
           text: `您好，我是『小助理迷天紀』。本系統依循紫微斗數與梅花易數之古典邏輯為您推演。為求精準，點評前將會先與您核對命盤基本資訊與過往運勢。請直說您想問的事，或是輸入您的生辰。`
-        }]);
+        }].concat(_liuyueText ? [{
+          type: 'bot',
+          text: _liuyueText
+        }] : []));else if (_liuyueText) setChatHistory(prev => prev.concat([{
+          type: 'bot',
+          text: _liuyueText
+        }]));
       }
       return calculatedChart;
     } catch (e) {
@@ -2667,15 +2677,7 @@ ${timeAnchor}
     size: 10
   }), " \u6D41\u5E74\u9808\u7559\u610F\u4E4B\u8655"), disasterFlags.filter(f => f.type !== 'month').map((f, i) => /*#__PURE__*/React.createElement("div", {
     key: i
-  }, "\u2022 ", f.msg)), disasterFlags.some(f => f.type === 'month') && /*#__PURE__*/React.createElement("details", {
-    className: "mt-1 pt-1 border-t border-red-300 font-normal"
-  }, /*#__PURE__*/React.createElement("summary", {
-    className: "cursor-pointer select-none"
-  }, "\u25B8 \u53E6\u6709 ", disasterFlags.filter(f => f.type === 'month').length, " \u500B\u6708\u4EFD\u7684\u63D0\u9192\uFF08\u8FB2\u66C6 ", disasterFlags.filter(f => f.type === 'month').map(f => (String(f.msg).match(/\*\*(\d+)月\*\*/) || [])[1]).filter(Boolean).join('、'), " \u6708\uFF09\u2014\u2014\u9EDE\u958B\u770B\u660E\u7D30\uFF0C\u6216\u554F\u6211\u4EFB\u4E00\u984C\u5C31\u6703\u9023\u5B9C\u5FCC\u4E00\u8D77\u8B1B\u3002"), /*#__PURE__*/React.createElement("div", {
-    className: "mt-1 space-y-0.5"
-  }, disasterFlags.filter(f => f.type === 'month').map((f, i) => /*#__PURE__*/React.createElement("div", {
-    key: 'm' + i
-  }, "\xB7 ", String(f.msg).replace(/\*\*/g, '')))))), /*#__PURE__*/React.createElement("div", {
+  }, "\u2022 ", f.msg))), /*#__PURE__*/React.createElement("div", {
     className: "flex justify-around items-center px-2 font-serif"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col items-center"
