@@ -2665,9 +2665,11 @@ ${timeAnchor}
     className: "flex items-center gap-1 mb-1 border-b border-red-300"
   }, /*#__PURE__*/React.createElement(AlertCircle, {
     size: 10
-  }), " \u6D41\u5E74\u9808\u7559\u610F\u4E4B\u8655"), disasterFlags.map((f, i) => /*#__PURE__*/React.createElement("div", {
+  }), " \u6D41\u5E74\u9808\u7559\u610F\u4E4B\u8655"), disasterFlags.filter(f => f.type !== 'month').map((f, i) => /*#__PURE__*/React.createElement("div", {
     key: i
-  }, "\u2022 ", f.msg))), /*#__PURE__*/React.createElement("div", {
+  }, "\u2022 ", f.msg)), disasterFlags.some(f => f.type === 'month') && /*#__PURE__*/React.createElement("div", {
+    className: "mt-1 pt-1 border-t border-red-300 font-normal"
+  }, "\u25B8 \u53E6\u6709 ", disasterFlags.filter(f => f.type === 'month').length, " \u500B\u6708\u4EFD\u7684\u63D0\u9192\uFF08\u8FB2\u66C6\uFF09\uFF0C\u554F\u6211\u4EFB\u4E00\u984C\u5C31\u6703\u9023\u6642\u9EDE\u4E00\u8D77\u8B1B\u3002")), /*#__PURE__*/React.createElement("div", {
     className: "flex justify-around items-center px-2 font-serif"
   }, /*#__PURE__*/React.createElement("div", {
     className: "flex flex-col items-center"
