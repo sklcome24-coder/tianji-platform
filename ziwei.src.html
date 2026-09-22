@@ -544,6 +544,9 @@
           
           // 【核心修正】用來記錄已經提醒過急災的命盤簽名，確保追問時不再重複顯示警告
           const lastWarnedSignature = useRef("");
+          /* 流月那一則只發一次：calculateChart 會跑兩次（載入自動＋按排盤），
+             第二次落 else 分支又 append，同一段會連出兩則。以盤的簽名擋重複。 */
+          const lastLiuyueSignature = useRef("");
           
           const LOCAL_STORAGE_KEY = 'ziwei_records_v1';
 
@@ -836,8 +839,11 @@
           + `忌與四殺同宮（問-482、問-483「主奔波帶疾」），落命宮或疾厄者另計性命攸關。`
           + `\n這是時點與所應之人事，不是斷定某月必出何禍（問-485「處事只求七分」）。`
           + `陽宅佈局要下重手的，就下在這幾個月所指的方位與人身上。想細問哪一個月，直接問我。`) : "";
-              if (chatHistory.length === 0 && !overrideInputs) setChatHistory([{ type: 'bot', text: `您好，我是『小助理迷天紀』。本系統依循紫微斗數與梅花易數之古典邏輯為您推演。為求精準，點評前將會先與您核對命盤基本資訊與過往運勢。請直說您想問的事，或是輸入您的生辰。` }].concat(_liuyueText ? [{ type: 'bot', text: _liuyueText }] : []));
-              else if (_liuyueText) setChatHistory(prev => prev.concat([{ type: 'bot', text: _liuyueText }]));
+              const _lySig = `${safeTargetYear}|${mingPos}|${inputs.gender}|${safeYear}|${lunarMonth}|${lunarDay}|${timeZhiIdx}`;
+              const _lyNew = _liuyueText && lastLiuyueSignature.current !== _lySig;
+              if (_lyNew) lastLiuyueSignature.current = _lySig;
+              if (chatHistory.length === 0 && !overrideInputs) setChatHistory([{ type: 'bot', text: `您好，我是『小助理迷天紀』。本系統依循紫微斗數與梅花易數之古典邏輯為您推演。為求精準，點評前將會先與您核對命盤基本資訊與過往運勢。請直說您想問的事，或是輸入您的生辰。` }].concat(_lyNew ? [{ type: 'bot', text: _liuyueText }] : []));
+              else if (_lyNew) setChatHistory(prev => prev.some(m => m.text === _liuyueText) ? prev : prev.concat([{ type: 'bot', text: _liuyueText }]));
                 }
                 return calculatedChart;
             } catch (e) { console.error(e); return null; }
