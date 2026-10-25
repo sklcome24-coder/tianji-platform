@@ -66,7 +66,7 @@
 </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>倪海廈經方系統 (v66.3 守方穩定版)</title>
+    <title>經方辨證系統・依倪師經方體系 (v66.3 守方穩定版)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;900&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
@@ -130,7 +130,7 @@
         .chat-bubble { max-width: 90%; padding: 12px 16px; font-size: 0.95rem; line-height: 1.6; position: relative; margin-bottom: 12px; }
         .chat-ni { align-self: flex-start; background-color: #292524; color: #e7e5e4; border-radius: 12px 12px 12px 0; border-left: 4px solid #b45309; }
         .chat-user { align-self: flex-end; background-color: #fff; color: #374151; border-radius: 12px 12px 0 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
-        .chat-ni::before { content: '倪師'; position: absolute; top: -20px; left: 0; font-size: 0.75rem; color: #78350f; font-weight: bold; }
+        .chat-ni::before { content: '辨證助理'; position: absolute; top: -20px; left: 0; font-size: 0.75rem; color: #78350f; font-weight: bold; }
         .chat-user::before { content: '您'; position: absolute; top: -20px; right: 0; font-size: 0.75rem; color: #6b7280; }
         
         .typing-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background-color: #a8a29e; animation: typing 1.4s infinite ease-in-out both; margin: 0 2px; }
@@ -161,10 +161,10 @@
             <div>
                 <h1 class="text-xl md:text-2xl font-bold tracking-[0.15em] flex items-center gap-2">
                     <span class="bg-[#78350f] text-[#fef3c7] px-2 py-0.5 text-lg font-serif rounded-sm">經方</span>
-                    倪海廈數位系統
+                    辨證系統
                 </h1>
                 <p class="text-xs text-[#a8a29e] mt-1 flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-green-500"></span> 守方穩定版 (v66.3)
+                    <span class="w-2 h-2 rounded-full bg-green-500"></span> 依倪師經方體系・守方穩定版 (v66.3)
                 </p>
             </div>
             <div class="flex items-center gap-3">
@@ -403,7 +403,7 @@
                                 <div id="rx-neijing"></div>
                             </div>
                              <div class="mt-2 pt-2 border-t border-dashed border-gray-300 text-xs text-[#44403c] italic">
-                                <span class="font-bold text-amber-700">【倪師點評】</span> <span id="ni-comment"></span>
+                                <span class="font-bold text-amber-700">【點評】</span> <span id="ni-comment"></span>
                             </div>
                              <div id="rx-classic-box" class="hidden mt-2 text-xs text-[#57534e] leading-relaxed"><span class="font-bold text-[#78350f]">【條文佐證】</span> <span id="rx-classic" class="font-serif"></span></div>
                              <div id="rx-diff-box" class="hidden mt-1 text-xs text-[#57534e] leading-relaxed"><span class="font-bold text-[#78350f]">【鑑別診斷】</span> <span id="rx-diff"></span></div>
@@ -435,7 +435,7 @@
                 <!-- 聊天互動區 (佔據剩餘空間) -->
                 <div class="flex-grow flex flex-col bg-white rounded-lg shadow border border-gray-200 overflow-hidden min-h-[400px]">
                     <div class="bg-gray-100 p-2 border-b border-gray-200 text-xs font-bold text-gray-600 flex justify-between items-center shadow-sm z-10">
-                        <span class="flex items-center gap-2"><i class="fa-solid fa-comments text-amber-700"></i> 倪師診間對話</span>
+                        <span class="flex items-center gap-2"><i class="fa-solid fa-comments text-amber-700"></i> 診間對話</span>
                         <span id="chat-status" class="text-[10px] bg-white px-2 py-0.5 rounded border border-gray-200 text-amber-600">待命中</span>
                     </div>
                     
@@ -823,7 +823,7 @@
                 appendChatBubble('ni', `🚨【緊急安全提醒】您的描述中出現「${redHits.join('、')}」等急症警訊。\n\n若症狀正在發生、突然加劇、或伴隨意識改變——請立刻撥打 119 或前往急診，先救命，再辨證。\n\n以下中醫分析僅供就醫前後之參考，不可取代急救。`);
             }
 
-            btn.innerHTML = '<span class="loader"></span> 倪師望聞問切中...';
+            btn.innerHTML = '<span class="loader"></span> 望聞問切中...';
             await callAI(initialContext, true);
             
             btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-bolt"></i> 啟動二階段辨證';
@@ -831,7 +831,7 @@
 
         // --- 核心邏輯：AI 呼叫 ---
         async function callAI(contextInput, isInitial = false) {
-            updateChatStatus("倪師思考中...");
+            updateChatStatus("辨證思考中...");
             
             let historyText = chatHistory.map(m => `${m.role === 'ni' ? '倪師' : '病患'}: ${m.text}`).join('\n');
             
@@ -1074,7 +1074,7 @@
             const bubble = document.createElement('div');
             bubble.id = 'loading-bubble';
             bubble.className = 'chat-bubble chat-ni flex items-center gap-1';
-            bubble.innerHTML = '<span class="text-xs text-gray-400 font-bold mr-1">倪師思考中</span>'
+            bubble.innerHTML = '<span class="text-xs text-gray-400 font-bold mr-1">辨證思考中</span>'
                 + '<span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>'
                 + '<span id="loading-elapsed" class="text-[10px] text-gray-400 ml-2"></span>';
             box.appendChild(bubble);
