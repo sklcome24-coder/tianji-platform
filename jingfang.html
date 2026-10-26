@@ -1022,8 +1022,6 @@
                 if (res.ni_chat_reply && res.ni_chat_reply.trim() !== "") {
                     appendChatBubble('ni', res.ni_chat_reply);
                 }
-
-                saveRecord(currentRx);
             } else if (res.type === 'revision') {
                 // 階段三：確有理由改方 → 更新處方鎖，並醒目呈現變更原因
                 if (res.diagnosis_data) {
@@ -1044,7 +1042,6 @@
                         renderDiagnosis(res.diagnosis_data, cr);
                     }
                     document.getElementById('result-card-container').classList.remove('hidden');
-                    saveRecord(currentRx);
                 }
                 if (res.ni_chat_reply && res.ni_chat_reply.trim() !== "") {
                     appendChatBubble('ni', res.ni_chat_reply);
@@ -1058,6 +1055,10 @@
                 // 未知型別：以純文字呈現，不讓內容消失
                 appendChatBubble('ni', res.ni_chat_reply || (typeof res === 'string' ? res : JSON.stringify(res)));
             }
+
+            // 每次回覆都存一次病歷：追問、守方問答、改方說明都留下來，還沒開方就離開的案例也不會遺失。
+            // 放在最後，這一輪的回覆才已經寫進對話紀錄。只有開方／改方才跳「已儲存」提示，免得每句話都跳。
+            saveRecord(currentRx, res.type !== 'diagnosis' && res.type !== 'revision');
         }
 
         // --- 聊天功能 ---
@@ -1289,6 +1290,7 @@
         function buildDoctorDoc(embedded) {
             const rx = currentRx || {};
             const m = caseMeta || {};
+            const noMeta = !caseMeta;   // 舊病歷當時沒存病患資料
             const now = new Date();
             const stamp = now.toLocaleString('zh-TW', { hour12: false });
             const herbs = (rx.bone_herbs || []).map(h =>
@@ -1325,6 +1327,8 @@
                 `<div class="msg ${x.role === 'ni' ? 'ni' : 'pt'}">
                     <span class="who">${x.role === 'ni' ? '系統' : '病患'}：</span>${nl2br(x.text)}</div>`).join('');
 
+            const oldRecordBox = noMeta
+                ? `<div class="alert"><b>⚠ 此為舊病歷</b>：當時未保存病患基本資料、問診選項與脈象，以下相關欄位空白，請向病患重新確認。</div>` : '';
             const redFlagBox = (m.redFlags && m.redFlags.length)
                 ? `<div class="alert red"><b>🚨 急症紅旗警示</b><br>問診描述含「${esc(m.redFlags.join('、'))}」等急症關鍵詞，
                    已提示病患評估即刻就醫。請醫師優先排除急重症。</div>` : '';
@@ -1399,6 +1403,7 @@ ${embedded ? '' : `<div class="noprint">
 </div>
 
 ${redFlagBox}
+${oldRecordBox}
 
 <h2>一、病患基本資料</h2>
 <dl class="kv">
@@ -1409,7 +1414,7 @@ ${redFlagBox}
 </dl>
 
 <h2>二、特殊情況（用藥安全把關）</h2>
-<div class="box">${esc(m.special || '無申報')}${m.specialDetail ? '<br>詳述：' + esc(m.specialDetail) : ''}</div>
+<div class="box">${esc(m.special || (noMeta ? '（舊病歷未保存）' : '無申報'))}${m.specialDetail ? '<br>詳述：' + esc(m.specialDetail) : ''}</div>
 
 <h2>三、主訴</h2>
 <div class="box">${nl2br(m.complaint || '—')}</div>
@@ -1423,7 +1428,7 @@ ${redFlagBox}
     ? '病患已上傳：' + esc(m.images.map(k => ({tongue:'舌象',face:'面相',sleep:'睡眠監測',hr:'靜止心率',hrv:'HRV',spo2:'血氧'}[k] || k)).join('、')) +
       '<br><span class="muted">※ 影像僅供 AI 初步判讀，未隨本文件輸出；如需調閱請向病患索取原圖。</span>'
     : '病患未上傳舌象或面相照片，AI 判讀僅依文字自述，<b>可靠度因此受限</b>。'}</div>
-<div class="box">脈象（使用者自填，非系統把脈）：${esc(m.pulse || '未把脈／不確定')}</div>
+<div class="box">脈象（使用者自填，非系統把脈）：${esc(m.pulse || (noMeta ? '（舊病歷未保存）' : '未把脈／不確定'))}</div>
 
 <h2>六、AI 辨證結果</h2>
 <dl class="kv">
@@ -1547,13 +1552,13 @@ ${history}
             } catch(e) { console.error(e); showToast("保存失敗"); }
         }
 
-        async function saveRecord(diagnosisData) {
+        async function saveRecord(diagnosisData, quiet = false) {
             const record = {
                 id: currentRecordId || Date.now().toString(),
                 timestamp: new Date().toISOString(),
-                diagnosis: diagnosisData.stage,
-                formula: diagnosisData.bone_formula,
-                fullResult: diagnosisData,
+                diagnosis: diagnosisData?.stage,
+                formula: diagnosisData?.bone_formula,      // 未開方時留空，病歷庫顯示「問診中」
+                fullResult: diagnosisData || null,
                 chatLog: chatHistory,
                 userNote: document.getElementById('user-note').value || "",
                 images: { ...imgData },
@@ -1561,6 +1566,9 @@ ${history}
                 initialContext: initialContext,
                 vitalsAnchor: vitalsAnchor,
                 rxVersion: rxVersion,
+                // 醫師文件用的病患資料與處方演變也跟著存：重新打開時才不會空白，或混到別的病人
+                caseMeta: caseMeta,
+                rxHistory: rxHistory,
                 source: 'local'
             };
             
@@ -1577,7 +1585,7 @@ ${history}
 
                 try {
                     localStorage.setItem('ni_tcm_records', JSON.stringify(localHistory));
-                    showToast("已自動儲存至本地病歷 (含圖片)");
+                    if (!quiet) showToast("已自動儲存至本地病歷 (含圖片)");
                 } catch (quotaError) {
                     console.warn("Storage Quota Exceeded. Removing images to save text data.");
                     record.images = {}; 
@@ -1593,7 +1601,7 @@ ${history}
                 showToast("本地儲存失敗");
             }
 
-            if(window.db && window.userId) {
+            if(!quiet && window.db && window.userId) {
                 try {
                     const appId = (typeof __app_id !== 'undefined') ? __app_id : 'ni-tcm-v64-local';
                     const colRef = window.firebaseModules.collection(window.db, 'artifacts', appId, 'users', window.userId, 'records');
@@ -1652,8 +1660,10 @@ ${history}
             // 還原辨證脈絡：處方鎖與體格基準都要接回來，否則續談時會被當成新病患重開方
             currentRx = d.fullResult || null;
             rxVersion = d.rxVersion || (d.fullResult ? 1 : 0);
-            initialContext = d.initialContext || initialContext;
-            vitalsAnchor = d.vitalsAnchor || vitalsAnchor;
+            initialContext = d.initialContext || '';
+            vitalsAnchor = d.vitalsAnchor || '';
+            caseMeta = d.caseMeta || null;
+            rxHistory = d.rxHistory || [];
 
             if(d.fullResult) renderDiagnosis(d.fullResult, null);
 
