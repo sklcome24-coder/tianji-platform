@@ -131,6 +131,9 @@
         .chat-ni { align-self: flex-start; background-color: #292524; color: #e7e5e4; border-radius: 12px 12px 12px 0; border-left: 4px solid #b45309; }
         .chat-user { align-self: flex-end; background-color: #fff; color: #374151; border-radius: 12px 12px 0 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .chat-ni::before { content: '辨證助理'; position: absolute; top: -20px; left: 0; font-size: 0.75rem; color: #78350f; font-weight: bold; }
+        .pulse-chip { font-size: 0.8rem; line-height: 1; padding: 0.4rem 0.6rem; border: 1px solid #e7d7c1; border-radius: 9999px; background: #fff; color: #57534e; cursor: pointer; }
+        .pulse-chip:hover { border-color: #78350f; }
+        .pulse-chip.on { background: #78350f; border-color: #78350f; color: #fff7ed; }
         .chat-user::before { content: '您'; position: absolute; top: -20px; right: 0; font-size: 0.75rem; color: #6b7280; }
         
         .typing-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background-color: #a8a29e; animation: typing 1.4s infinite ease-in-out both; margin: 0 2px; }
@@ -189,7 +192,7 @@
             <!-- 1. 體格與望診 (包含數位數據) -->
             <div class="zen-card">
                 <div class="zen-header cursor-pointer" onclick="toggleSection('body-section')">
-                    <span><i class="fa-solid fa-user-doctor"></i> 望診 (舌/面/數據)</span>
+                    <span><i class="fa-solid fa-user-doctor"></i> 望診與脈象 (舌/面/脈)</span>
                     <i class="fa-solid fa-chevron-down ml-auto text-xs text-gray-400"></i>
                 </div>
                 <div id="body-section" class="p-4 space-y-4">
@@ -231,51 +234,18 @@
                         </div>
                     </div>
                     
-                    <!-- 數位數據 Grid -->
-                    <div class="grid grid-cols-4 gap-2">
-                        <!-- 心率 -->
-                        <div id="box-hr" class="file-upload h-20 rounded overflow-hidden bg-red-50 hover:bg-red-100 border-red-100">
-                            <input type="file" id="hr-image" accept="image/*" class="absolute inset-0 opacity-0 z-10 cursor-pointer" onchange="previewImage(this, 'hr')">
-                            <div id="hr-placeholder" class="pointer-events-none">
-                                <i class="fa-solid fa-heart-pulse text-red-300 text-lg mb-0.5"></i>
-                                <div class="text-[10px] text-red-800 font-bold">靜止心率</div>
-                            </div>
-                            <img id="hr-preview" class="hidden w-full h-full object-cover z-20" onclick="openLightbox('hr-preview')">
-                            <div id="hr-clear" class="img-overlay-btn hidden" onclick="clearImage('hr')">x</div>
+                    <!-- 脈象（《傷寒論》脈名；由醫師或學習案例填寫）。單脈與組合鈕由下方程式產生 -->
+                    <div id="pulse-box" class="rounded border border-amber-200 bg-amber-50/40 p-2.5">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="text-xs font-bold text-[#78350f]"><i class="fa-solid fa-hand-holding-medical"></i> 脈象</span>
+                            <span class="text-[10px] text-gray-500">由醫師或學習案例填寫・可複選</span>
                         </div>
-
-                        <!-- 睡眠 -->
-                        <div id="box-sleep" class="file-upload h-20 rounded overflow-hidden bg-indigo-50 hover:bg-indigo-100 border-indigo-100">
-                            <input type="file" id="sleep-image" accept="image/*" class="absolute inset-0 opacity-0 z-10 cursor-pointer" onchange="previewImage(this, 'sleep')">
-                            <div id="sleep-placeholder" class="pointer-events-none">
-                                <i class="fa-solid fa-bed text-indigo-300 text-lg mb-0.5"></i>
-                                <div class="text-[10px] text-indigo-800 font-bold">睡眠監測</div>
-                            </div>
-                            <img id="sleep-preview" class="hidden w-full h-full object-cover z-20" onclick="openLightbox('sleep-preview')">
-                            <div id="sleep-clear" class="img-overlay-btn hidden" onclick="clearImage('sleep')">x</div>
-                        </div>
-
-                        <!-- HRV -->
-                        <div id="box-hrv" class="file-upload h-20 rounded overflow-hidden bg-purple-50 hover:bg-purple-100 border-purple-100">
-                            <input type="file" id="hrv-image" accept="image/*" class="absolute inset-0 opacity-0 z-10 cursor-pointer" onchange="previewImage(this, 'hrv')">
-                            <div id="hrv-placeholder" class="pointer-events-none">
-                                <i class="fa-solid fa-wave-square text-purple-300 text-lg mb-0.5"></i>
-                                <div class="text-[10px] text-purple-800 font-bold">HRV 變異</div>
-                            </div>
-                            <img id="hrv-preview" class="hidden w-full h-full object-cover z-20" onclick="openLightbox('hrv-preview')">
-                            <div id="hrv-clear" class="img-overlay-btn hidden" onclick="clearImage('hrv')">x</div>
-                        </div>
-
-                        <!-- 血氧 -->
-                        <div id="box-spo2" class="file-upload h-20 rounded overflow-hidden bg-sky-50 hover:bg-sky-100 border-sky-100">
-                            <input type="file" id="spo2-image" accept="image/*" class="absolute inset-0 opacity-0 z-10 cursor-pointer" onchange="previewImage(this, 'spo2')">
-                            <div id="spo2-placeholder" class="pointer-events-none">
-                                <i class="fa-solid fa-lungs text-sky-300 text-lg mb-0.5"></i>
-                                <div class="text-[10px] text-sky-800 font-bold">血氧 SpO2</div>
-                            </div>
-                            <img id="spo2-preview" class="hidden w-full h-full object-cover z-20" onclick="openLightbox('spo2-preview')">
-                            <div id="spo2-clear" class="img-overlay-btn hidden" onclick="clearImage('spo2')">x</div>
-                        </div>
+                        <button type="button" id="pulse-none" class="pulse-chip on" onclick="clearPulse()">未把脈／不確定</button>
+                        <div class="text-[10px] text-gray-500 mt-2 mb-1">常見組合</div>
+                        <div id="pulse-combos" class="flex flex-wrap gap-1"></div>
+                        <div class="text-[10px] text-gray-500 mt-2 mb-1">單脈</div>
+                        <div id="pulse-singles" class="flex flex-wrap gap-1"></div>
+                        <input type="text" id="pulse-note" class="w-full mt-2 p-1.5 border rounded text-xs bg-white" placeholder="部位與補充（如：寸浮關弦、左右不同）">
                     </div>
                 </div>
             </div>
@@ -464,6 +434,7 @@
                 <label class="block text-xs font-bold text-gray-500 mb-1">倪師知識庫通行密語</label>
                 <input type="password" id="custom-api-key" class="w-full p-2 border rounded focus:border-[#78350f] outline-none" placeholder="貼上通行密語（在 Mac 執行 cat ~/.rag_token 取得）">
                 <p id="fixed-key-msg" class="text-[10px] text-green-600 mt-1 hidden"><i class="fa-solid fa-lock"></i> 已偵測到程式碼內建金鑰，可略過此步驟。</p>
+                <p id="key-msg" class="text-xs text-red-700 mt-2 hidden"></p>
             </div>
             <div class="flex justify-end gap-2">
                 <button onclick="document.getElementById('api-modal').classList.add('hidden')" class="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded text-sm">取消</button>
@@ -500,7 +471,36 @@
 
         // --- 變數 ---
         let userApiKey = "";
-        let imgData = { tongue: null, face: null, sleep: null, hr: null, hrv: null, spo2: null };
+        let imgData = { tongue: null, face: null };
+
+        // --- 脈象選單（脈名取自《傷寒論》）---
+        // 單脈依點選順序記錄；組合鈕只是捷徑，展開成單脈（浮緊 → 浮、緊），再按一次取消。
+        const PULSE_SINGLES = ['浮','沉','遲','數','緩','緊','弦','滑','澀','細','微','弱','洪','大','實','芤','促','結','代','動','長','短'];
+        const PULSE_COMBOS = ['浮緊','浮緩','浮數','沉遲','沉微','微細','弦細','洪大','滑數','結代'];
+        let pulseSel = [];
+        function renderPulse() {
+            document.getElementById('pulse-none').classList.toggle('on', pulseSel.length === 0);
+            document.querySelectorAll('#pulse-singles .pulse-chip').forEach(b => b.classList.toggle('on', pulseSel.includes(b.dataset.p)));
+            document.querySelectorAll('#pulse-combos .pulse-chip').forEach(b => b.classList.toggle('on', [...b.dataset.p].every(p => pulseSel.includes(p))));
+        }
+        window.togglePulse = (p) => { pulseSel = pulseSel.includes(p) ? pulseSel.filter(x => x !== p) : [...pulseSel, p]; renderPulse(); };
+        window.pickPulseCombo = (c) => {
+            const parts = [...c];
+            pulseSel = parts.every(p => pulseSel.includes(p))
+                ? pulseSel.filter(x => !parts.includes(x))
+                : [...pulseSel, ...parts.filter(p => !pulseSel.includes(p))];
+            renderPulse();
+        };
+        window.clearPulse = () => { pulseSel = []; document.getElementById('pulse-note').value = ''; renderPulse(); };
+        // 送給 AI 的脈象文字；沒選也明講「未把脈」，免得空白被當成正常脈。
+        // 「缺脈診」照抄規則信心度那條的用詞（中＝缺脈診），AI 才會對上那一條，不會照樣給「高」。
+        function pulseText() {
+            const note = document.getElementById('pulse-note').value.trim();
+            if (!pulseSel.length && !note) return '未把脈／不確定（缺脈診）';
+            return (pulseSel.length ? pulseSel.join('、') : '（未選脈名）') + (note ? '；補充：' + note : '');
+        }
+        document.getElementById('pulse-combos').innerHTML = PULSE_COMBOS.map(c => `<button type="button" class="pulse-chip" data-p="${c}" onclick="pickPulseCombo('${c}')">${c}</button>`).join('');
+        document.getElementById('pulse-singles').innerHTML = PULSE_SINGLES.map(p => `<button type="button" class="pulse-chip" data-p="${p}" onclick="togglePulse('${p}')">${p}</button>`).join('');
         let chatHistory = [];
         let currentRecordId = null;
         let initialContext = "";
@@ -600,7 +600,9 @@
                 document.getElementById('custom-api-key').disabled = true;
             } else {
                 // 欄位標示的是通行密語，就從密語那格取（金鑰那格留給語音，不在此頁使用）
-                const savedKey = localStorage.getItem('ni_access_token');
+                let savedKey = null;
+                try { savedKey = localStorage.getItem('ni_access_token'); }
+                catch (e) { keyMsg(STORAGE_BLOCKED_MSG); }
                 if(savedKey) {
                     userApiKey = savedKey;
                     document.getElementById('custom-api-key').value = savedKey;
@@ -628,6 +630,15 @@
             })();
         });
 
+        // 密語存不進去時要講出來：App 內預覽視窗、封鎖網站資料的瀏覽器都會擋 localStorage，
+        // 以前「永久儲存」在那種環境裡按了毫無反應，看起來像壞掉。
+        const STORAGE_BLOCKED_MSG = '⚠ 這個瀏覽器環境不允許儲存密語（例如 App 內的預覽視窗，或封鎖了網站資料的瀏覽器）。請改用 Chrome 一般視窗開啟本頁。';
+        function keyMsg(text) {
+            const el = document.getElementById('key-msg');
+            el.textContent = text;
+            el.classList.toggle('hidden', !text);
+        }
+
         function updateApiStatus(connected) {
             const badge = document.getElementById('api-status-display');
             if(connected) { badge.innerHTML = '<i class="fa-solid fa-link"></i> API 已連線'; badge.classList.remove('inactive'); badge.classList.add('active'); } 
@@ -640,11 +651,15 @@
                  return;
             }
             const k = document.getElementById('custom-api-key').value.trim();
+            if (!k) { keyMsg('請先貼上通行密語，再按「永久儲存」。'); return; }
             if(k) { 
                 /* 依內容分流：AIza…/AQ.… 是 Google 金鑰（語音用），其餘視為通行密語（後端用）。
                    使用者不必分辨自己填的是哪一種。 */
-                if (/^AIza/.test(k) || /^AQ\./.test(k)) localStorage.setItem('gemini_api_key', k);
-                else localStorage.setItem('ni_access_token', k);
+                try {
+                    if (/^AIza/.test(k) || /^AQ\./.test(k)) localStorage.setItem('gemini_api_key', k);
+                    else localStorage.setItem('ni_access_token', k);
+                } catch (e) { keyMsg(STORAGE_BLOCKED_MSG); return; }
+                keyMsg('');
                 userApiKey = k; 
                 updateApiStatus(true); 
                 if(event && event.target) {
@@ -788,7 +803,8 @@
             const redHits = scanRedFlags(allText);
             const redText = redHits.length ? `🚨【急症紅旗】病患描述含「${redHits.join('、')}」——回覆第一段必須先評估是否需立即就醫/叫救護車，再進行辨證。` : '';
 
-            initialContext = `病患：${gender}, ${age}歲, 身高${height}cm, 體重${weight}kg。\n${spText}\n${redText}\n主訴：${complaint}。問診資料：\n${qData}`;
+            const pulse = pulseText();
+            initialContext = `病患：${gender}, ${age}歲, 身高${height}cm, 體重${weight}kg。\n${spText}\n${redText}\n主訴：${complaint}。問診資料：\n${qData}\n脈象（使用者自填，非系統把脈）：${pulse}`;
             // 體格基準單獨保存並每輪重述，避免長對話中被稀釋而導致劑量浮動
             vitalsAnchor = `${gender}／${age}歲／身高${height}cm／體重${weight}kg（此為劑量計算依據，全程不變）`;
 
@@ -803,6 +819,7 @@
                     選項: document.querySelector(`input[name="${q.id}"]:checked`).value,
                     自述: document.getElementById(`detail-${q.id}`).value || ''
                 })),
+                pulse,
                 images: Object.keys(imgData).filter(k => imgData[k]),
                 startedAt: new Date().toISOString()
             };
@@ -1376,7 +1393,7 @@ ${embedded ? '' : `<div class="noprint">
 <div class="alert top">
   <b>⚠ 重要聲明（請務必先讀）</b><br>
   本文件由 <b>AI 輔助辨證系統</b>依《傷寒論》《金匱要略》與倪海廈教學體系之知識庫生成，
-  <b>不是醫療診斷，也不是處方箋</b>。系統未經把脈、未經當面望聞問切，所有判斷僅根據病患自述文字與上傳影像。<br>
+  <b>不是醫療診斷，也不是處方箋</b>。系統未經把脈、未經當面望聞問切，所有判斷僅根據病患自述文字、上傳影像與使用者自填之脈象。<br>
   <b>未經合格中醫師當面診察並於下方簽核前，不得據以抓藥或服用。</b>
   文件內所列方藥與劑量僅供醫師討論參考，最終處方權責歸屬簽核醫師。
 </div>
@@ -1401,11 +1418,12 @@ ${redFlagBox}
 <table><thead><tr><th style="width:26%">項目</th><th style="width:30%">選項</th><th>病患自述</th></tr></thead>
 <tbody>${qa || '<tr><td colspan="3">—</td></tr>'}</tbody></table>
 
-<h2>五、望診資料</h2>
+<h2>五、望診與脈象</h2>
 <div class="box">${(m.images && m.images.length)
     ? '病患已上傳：' + esc(m.images.map(k => ({tongue:'舌象',face:'面相',sleep:'睡眠監測',hr:'靜止心率',hrv:'HRV',spo2:'血氧'}[k] || k)).join('、')) +
       '<br><span class="muted">※ 影像僅供 AI 初步判讀，未隨本文件輸出；如需調閱請向病患索取原圖。</span>'
     : '病患未上傳舌象或面相照片，AI 判讀僅依文字自述，<b>可靠度因此受限</b>。'}</div>
+<div class="box">脈象（使用者自填，非系統把脈）：${esc(m.pulse || '未把脈／不確定')}</div>
 
 <h2>六、AI 辨證結果</h2>
 <dl class="kv">
@@ -1639,9 +1657,12 @@ ${history}
 
             if(d.fullResult) renderDiagnosis(d.fullResult, null);
 
-            // 重置全部六種影像欄位，避免殘留上一筆病歷的圖片
-            const ALL_IMG_TYPES = ['tongue','face','sleep','hr','hrv','spo2'];
-            imgData = Object.assign({tongue:null,face:null,sleep:null,hr:null,hrv:null,spo2:null}, d.images || {});
+            // 重置舌象、面相欄位，避免殘留上一筆病歷的圖片。
+            // 舊病歷可能還帶著手錶截圖（心率/睡眠/HRV/血氧），那些欄位已拿掉：不帶回，
+            // 否則畫面看不到、卻會在續談時被當成影像送給 AI。
+            const ALL_IMG_TYPES = ['tongue','face'];
+            const oldImgs = d.images || {};
+            imgData = { tongue: oldImgs.tongue || null, face: oldImgs.face || null };
             ALL_IMG_TYPES.forEach(type => {
                 if (imgData[type]) {
                     setPreview(type, `data:image/jpeg;base64,${imgData[type]}`);
